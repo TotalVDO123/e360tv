@@ -2,10 +2,6 @@
 
 namespace App\Jobs;
 
-///////////
-
-use PlatformCommunity\Flysystem\BunnyCDN\BunnyCDNClient;
-//////////////////
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -68,7 +64,7 @@ class ProcessFileUpload implements ShouldQueue
 
 
 
-            //$file = Storage::get($this->filePath); by Manjeet Singh 
+            $file = Storage::get($this->filePath);
 
             if ($this->diskType === 'local') {
 
@@ -81,16 +77,8 @@ class ProcessFileUpload implements ShouldQueue
                     $absoluteDirectoryPath = storage_path('app/' . $directoryPath);
                     File::makeDirectory($absoluteDirectoryPath, 0775, true, true);
                 }
-//////////////
-                //Storage::disk('local')->put($folderPath, $file);
-                //////////////
-                $stream = Storage::disk('local')->readStream($this->filePath);
-  try {
-      Storage::disk('local')->writeStream($folderPath, $stream);
-  } finally {
-      if (is_resource($stream)) { fclose($stream); }
-  }
-/////////////////////////
+
+                Storage::disk('local')->put($folderPath, $file);
 
                 $fullPath = storage_path('app/' . $folderPath);
                 if (file_exists($fullPath)) {
@@ -103,22 +91,7 @@ class ProcessFileUpload implements ShouldQueue
                 }
             } else {
                 $folderPath =  $this->page_type . '/' . $this->fileType . '/' . $this->filemanager->file_name;
-                //////
-                //Storage::disk($this->diskType)->put($folderPath, $file);
-                
-                ////////////
-                
-                $cfg    = config('filesystems.disks.' . $this->diskType);
-  $client = new BunnyCDNClient($cfg['storage_zone'], $cfg['api_key'], $cfg['region']);
-  $root   = trim($cfg['root'] ?? '', '/');
-  $target = $root !== '' ? $root . '/' . $folderPath : $folderPath;
-  $stream = fopen(Storage::disk('local')->path($this->filePath), 'rb');
-  try {
-      $client->upload($target, $stream);
-  } finally {
-      if (is_resource($stream)) { fclose($stream); }
-  }
-///////////
+                Storage::disk($this->diskType)->put($folderPath, $file);
             }
 
             $this->filemanager->save();
@@ -135,10 +108,9 @@ class ProcessFileUpload implements ShouldQueue
                     Storage::disk('local')->delete($originalTempPath);
                 }
             }
-////////////////////////////
-            //Artisan::call('config:clear');
-            //Artisan::call('cache:clear');
-///////////////////////////            
+
+            Artisan::call('config:clear');
+            Artisan::call('cache:clear');
         } catch (\Exception $e) {
 
             Log::info("Error processing file upload: " . $e->getMessage());

@@ -10,11 +10,11 @@
         </div>
         <div class="movie-lists section-spacing-bottom">
             <div class="container-fluid">
-                <div class="row gy-4 gx-4 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 row-cols-xl-7"
+                <div class="row gy-4 gx-4 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5"
                     id="top-channel">
                 </div>
                 <div class="card-style-slider shimmer-container">
-                    <div class="row gy-4 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-6 mt-3">
+                    <div class="row gy-4 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 mt-3">
                         @for ($i = 0; $i < 12; $i++)
                             <div class="shimmer-container col mb-3">
                                 @include('components.card_shimmer_channel')

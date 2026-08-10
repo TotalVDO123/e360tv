@@ -49,19 +49,7 @@ body{
     <div class="container-fluid padding-right-0">
         <div class="overflow-hidden">
 
-                <?php
-                
-   /*             
-    $data_channels = DB::table('live_tv_channel as c')
-    ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
-    ->where('m.upcoming_date', '<=', now()->toDateString())
-    ->where('c.status', 1)
-      ->orderBy('m.recurring_program', 'DESC')
-      ->limit(8)
-   */
-   
-?>
-
+              
 
 
 <!-------------------live stream---------------------------------------->
@@ -69,23 +57,7 @@ body{
 <?php 
 
 
-/*
-      $data_channels = DB::table('live_tv_channel as c')
-    ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
-    ->select('c.*,m.upcoming_date')
-    ->where('c.status', 1)
-    ->where('m.upcoming_date', '>=', now()->toDateString())
-    ->orderBy('m.recurring_program', 'DESC')
-    ->orderBy('m.upcoming_date', 'ASC')
-    ->limit(8)
-    ->get()
-    ->map(function ($item) {
-        return (array) $item;
-    })
-    ->toArray();      
-      
-   */   
-      
+
        date_default_timezone_set('America/Los_Angeles');
         $currentDateTime = date('Y-m-d H:i:s');
      // echo "================".now();
@@ -138,21 +110,67 @@ body{
 //echo "=============".   date('l');
 ///exit;
 
-$data_channels = DB::table('live_tv_channel as c')
-    ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
-    ->select('c.*', 'm.upcoming_date', 'm.recurring_program')
+
+
+
+$currentDateTime = date('Y-m-d H:i:s');
+$today = date('Y-m-d');
+
+$liveQuery = DB::table('live_tv_channel as c')
+    ->join(
+        'live_tv_stream_content_mapping as m',
+        'c.id',
+        '=',
+        'm.tv_channel_id'
+    )
+    ->select(
+        'c.*',
+        'm.upcoming_date',
+        'm.upcoming_end_date',
+        'm.recurring_program',
+        DB::raw('0 as sort_order')
+    )
     ->where('c.status', 1)
-    ->whereRaw("DAYNAME(m.upcoming_date) = ?", [date('l')])
-    ->whereDate('m.upcoming_date', '<=', $end)
-    ->orderByDesc('m.recurring_program')
-    ->orderBy('m.upcoming_date', 'ASC')
-    ->limit(8)
+    ->whereDate('m.upcoming_date', $today)
+    ->where('m.upcoming_date', '<=', $currentDateTime)
+    ->where('m.upcoming_end_date', '>=', $currentDateTime);
+
+
+$otherQuery = DB::table('live_tv_channel as c')
+    ->join(
+        'live_tv_stream_content_mapping as m',
+        'c.id',
+        '=',
+        'm.tv_channel_id'
+    )
+    ->select(
+        'c.*',
+        'm.upcoming_date',
+        'm.upcoming_end_date',
+        'm.recurring_program',
+        DB::raw('1 as sort_order')
+    )
+    ->where('c.status', 1)
+    ->whereDate('m.upcoming_date', $today)
+    ->where(function ($q) use ($currentDateTime) {
+        $q->where('m.upcoming_date', '>', $currentDateTime)
+          ->orWhere('m.upcoming_end_date', '<', $currentDateTime);
+    });
+
+
+$data_channels = $liveQuery
+    ->unionAll($otherQuery)
+    ->orderBy('sort_order', 'ASC')
+    ->orderBy('upcoming_date', 'ASC')
+    ->limit(18)
     ->get()
     ->map(function ($item) {
         return (array) $item;
     })
     ->toArray();
-    
+
+
+
     
     
       
