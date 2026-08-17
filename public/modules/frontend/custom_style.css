@@ -1,0 +1,103 @@
+
+
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap');
+
+
+body{
+    background-color:  #1c2f4f !important;
+    color: #ffffff;
+   /* font-family: 'Poppins', sans-serif !important; */
+   
+   font-family: 'Montserrat', sans-serif !important;
+}
+
+.h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6
+{
+
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+
+.footer .footer-top
+{
+	background-color:#1c2f4f !important;
+}
+
+
+.header 
+{
+
+    background: rgba(28, 47, 79, 0.85) !important; 
+}
+.header.header-absolute {
+    backdrop-filter: blur(.625em);
+    background: rgba(28, 47, 79, 0.85) !important;
+}
+
+
+.footer .footer-bottom 
+{
+	background-color:#1c2f4f !important;
+	
+}
+
+bg-body {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+
+.user-login-card 
+{
+   background:rgba(28, 47, 79, 0.85) !important; 
+}    
+
+.video-js 
+{
+     background:rgba(28, 47, 79, 0.85) !important;  
+}
+
+.short-menu .movie-detail-menu 
+{
+    background-color: #1b2125 !important;
+
+}
+
+
+
+.card
+{
+    
+    background-color:  #1c2f4f !important;
+}
+
+
+.payment-detail
+{
+  background-color:  #1c2f4f !important;   
+}
+
+.season-card
+{
+    	background-color:#1c2f4f !important;
+}
+
+
+.slick-list.draggable
+{
+    	margin-bottom:2.50rem !important;
+    	overflow:visible;
+}
+
+.moreinfinity-card .tv-series-network-slider .slick-slide {
+	padding: 0 var(--spacing, 8px) !important;
+}
+
+.moreinfinity-card .tv-series-network-slider .slick-item .image-box img {
+	width: 100% !important;
+	height: auto !important;
+	aspect-ratio: 230 / 390;
+	object-fit: cover;
+	display: block;
+}

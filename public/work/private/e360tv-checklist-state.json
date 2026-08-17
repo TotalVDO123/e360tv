@@ -1,0 +1,65 @@
+{
+    "SEC-01": {
+        "status": "In Progress",
+        "done": false,
+        "notes": "Test note",
+        "updated_by": "Anonymous",
+        "updated_at": "2026-07-13T05:24:07+00:00"
+    },
+    "NAV-03": {
+        "status": "Done",
+        "done": true,
+        "notes": "screen down pagination is working on this page",
+        "updated_by": "Anonymous",
+        "updated_at": "2026-07-13T08:12:27+00:00"
+    },
+    "NAV-04": {
+        "status": "Done",
+        "done": true,
+        "notes": "hide the https://dev.e360tv.com/tv-shows url from menu",
+        "updated_by": "Anonymous",
+        "updated_at": "2026-07-13T08:12:21+00:00"
+    },
+    "NAV-05": {
+        "status": "Done",
+        "done": true,
+        "notes": "remove all Videos links from videos table",
+        "updated_by": "Anonymous",
+        "updated_at": "2026-07-13T08:12:17+00:00"
+    },
+    "NAV-06": {
+        "status": "Done",
+        "done": true,
+        "notes": "remove text  “Tv Shows Networs Wise” into “TV Shows by Network.” from menu",
+        "updated_by": "Anonymous",
+        "updated_at": "2026-07-13T08:12:14+00:00"
+    },
+    "NAV-07": {
+        "status": "Done",
+        "done": true,
+        "notes": "remove test360 from menu and active network will show in menu list",
+        "updated_by": "Anonymous",
+        "updated_at": "2026-07-13T09:55:24+00:00"
+    },
+    "NAV-08": {
+        "status": "Done",
+        "done": true,
+        "notes": "Each published(active) network shows valid content\n empty networks are hidden in menu list",
+        "updated_by": "Anonymous",
+        "updated_at": "2026-07-13T09:59:42+00:00"
+    },
+    "NAV-09": {
+        "status": "Done",
+        "done": true,
+        "notes": "Each published(active) genre shows valid content",
+        "updated_by": "Anonymous",
+        "updated_at": "2026-07-13T10:17:59+00:00"
+    },
+    "NAV-10": {
+        "status": "Done",
+        "done": true,
+        "notes": "Populate the page or remove the View All link while retaining valid homepage personalities.",
+        "updated_by": "Anonymous",
+        "updated_at": "2026-07-13T10:57:40+00:00"
+    }
+}

@@ -1,0 +1,17 @@
+[03-Aug-2026 07:30:42 UTC] PHP Deprecated:  Mobile_Detect::__construct(): Implicitly marking parameter $headers as nullable is deprecated, the explicit nullable type must be used instead in /home/n774636/public_html/vendor/mobiledetect/mobiledetectlib/Mobile_Detect.php on line 888
+[14-Aug-2026 10:17:08 UTC] PHP Warning:  require(/home/n774636/public_html/vendor/composer/../../public_html/app/helpers.php): Failed to open stream: No such file or directory in /home/n774636/public_html/vendor/composer/autoload_real.php on line 41
+[14-Aug-2026 10:17:08 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/n774636/public_html/vendor/composer/../../public_html/app/helpers.php' (include_path='.:/opt/cpanel/ea-php84/root/usr/share/pear') in /home/n774636/public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/n774636/public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInitfcf59339fec5b8d2518533c45057c46b::getLoader():37}('236e2a6c09aed40...', '/home/n774636/p...')
+#1 /home/n774636/public_html/vendor/autoload.php(22): ComposerAutoloaderInitfcf59339fec5b8d2518533c45057c46b::getLoader()
+#2 /home/n774636/public_html/public/index.php(36): require('/home/n774636/p...')
+#3 {main}
+  thrown in /home/n774636/public_html/vendor/composer/autoload_real.php on line 41
+[14-Aug-2026 10:17:56 UTC] PHP Warning:  require(/home/n774636/public_html/vendor/composer/../../public_html/app/helpers.php): Failed to open stream: No such file or directory in /home/n774636/public_html/vendor/composer/autoload_real.php on line 41
+[14-Aug-2026 10:17:56 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/n774636/public_html/vendor/composer/../../public_html/app/helpers.php' (include_path='.:/opt/cpanel/ea-php84/root/usr/share/pear') in /home/n774636/public_html/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/n774636/public_html/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInitfcf59339fec5b8d2518533c45057c46b::getLoader():37}('236e2a6c09aed40...', '/home/n774636/p...')
+#1 /home/n774636/public_html/vendor/autoload.php(22): ComposerAutoloaderInitfcf59339fec5b8d2518533c45057c46b::getLoader()
+#2 /home/n774636/public_html/public/index.php(36): require('/home/n774636/p...')
+#3 {main}
+  thrown in /home/n774636/public_html/vendor/composer/autoload_real.php on line 41

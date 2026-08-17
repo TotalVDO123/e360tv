@@ -1,0 +1,6 @@
+# Apache / LiteSpeed: block direct browser access to all files in this folder
+Require all denied
+
+<IfModule !mod_authz_core.c>
+    Deny from all
+</IfModule>
