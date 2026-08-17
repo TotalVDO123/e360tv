@@ -54,56 +54,49 @@ class TvShowController extends Controller
 
     public function tvShowList(Request $request,$slug="",$language = null)
     {
-        
-        
-       // $networkId = abs($request->query('networkid'));
+        $data = $this->resolveTvShowListData($slug);
 
-     ////  echo "=============".$slug;
-       
-      //// exit;
-        
+        return view('frontend::tvShow', $data);
+    }
 
-
-        $user_id = auth()->id();
-        $user = Auth::user();
-
-    $network_name="";
-    $network_banner_image="";
-    $networkId=0;
-    if(!empty($slug))
+    public function tvShowListEmbed(Request $request, $slug = 'e360films')
     {
-        ///$network = DB::table('series_networks')
-           ///     ->select('id', 'name', 'image','banner_image')
-            ////    ->where('id', $networkId)
-            ////    ->first();
-                
-                
-          ///      ->where('network_list_active', 1)      
-        $network = DB::table('series_networks')
-                ->select('id', 'name', 'image','banner_image')
+        $data = $this->resolveTvShowListData($slug, true);
+
+        return view('frontend::tvShowEmbed', $data);
+    }
+
+    private function resolveTvShowListData(string $slug = '', bool $requireNetwork = false): array
+    {
+        $network_name = '';
+        $network_banner_image = '';
+        $networkId = 0;
+
+        if (!empty($slug)) {
+            $network = DB::table('series_networks')
+                ->select('id', 'name', 'image', 'banner_image')
                 ->where('slug', $slug)
-          
-                ->first();        
-            
-        $network_name=$network->name;
-        $networkId=$network->id;
-        $network_banner_image=$network->banner_image;
-        
-        
-    }  
+                ->first();
+
+            if (!$network) {
+                abort(404);
+            }
+
+            $network_name = $network->name;
+            $networkId = $network->id;
+            $network_banner_image = $network->banner_image;
+        } elseif ($requireNetwork) {
+            abort(404);
+        }
 
         $featured_tvshow = Banner::where('banner_for', 'tv_show')
             ->where('status', 1)
             ->limit(5)
             ->get();
         $sliders = SliderResourceV3::collection($featured_tvshow);
-        $sliders =  $sliders->toArray(request());
+        $sliders = $sliders->toArray(request());
 
-        return view('frontend::tvShow', compact(
-
-            'sliders','networkId','network_name','network_banner_image'
-
-        ));
+        return compact('sliders', 'networkId', 'network_name', 'network_banner_image');
     }
 
     public function tvshowDetail(Request $request, $slug)

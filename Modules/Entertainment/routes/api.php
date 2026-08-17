@@ -11,6 +11,7 @@ use Modules\Frontend\Http\Controllers\FrontendController;
 Route::prefix('v3')->group(function () {
 Route::get('movie-list', [EntertainmentsController::class, 'movieListV3']);
 Route::get('tvshow-list', [EntertainmentsController::class, 'tvshowListV3']);
+Route::get('embed/tvshow-list', [EntertainmentsController::class, 'tvshowListEmbedV3']);
 Route::get('get-search-data', [FrontendController::class, 'getSearchV3']);
 });
 

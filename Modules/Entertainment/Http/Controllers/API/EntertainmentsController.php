@@ -187,10 +187,6 @@ class EntertainmentsController extends Controller
     
   $networkId = $request->query('networkId');
    
-   
-   //echo "=============11".$networkId;
-   
-   ///exit;
 
     // Base query
     $tvshowList = Entertainment::query()
@@ -236,15 +232,9 @@ class EntertainmentsController extends Controller
          $tvshowList->whereRaw(
             "FIND_IN_SET(?, REPLACE(entertainments.network_id, ' ', ''))",
             [$networkId]
-        );
-
-       // ->orWhere('entertainments.network_id', $networkId);
-    
+        );    
        }
     
-   
-  
-
     // Search filter
     if ($request->filled('search')) {
         $searchTerm = $request->search;
@@ -255,10 +245,6 @@ class EntertainmentsController extends Controller
                 });
         });
     }
-    
-    
-    
-    
     
 
     if (isset($request->is_restricted)) {
@@ -303,6 +289,101 @@ class EntertainmentsController extends Controller
     ], 200);
 }
 
+    public function tvshowListEmbedV3(Request $request)
+    {
+        $perPage = $request->input('per_page', 12);
+        $networkId = $request->query('networkId');
+
+        $tvshowList = Entertainment::query()
+            ->select([
+                'entertainments.id',
+                'entertainments.name',
+                'entertainments.slug',
+                'entertainments.description',
+                'entertainments.type',
+                'entertainments.plan_id',
+                'plan.level as plan_level',
+                'entertainments.language',
+                'entertainments.imdb_rating',
+                'entertainments.content_rating',
+                'entertainments.release_date',
+                'entertainments.is_restricted',
+                'entertainments.status',
+                'entertainments.poster_url as poster_url',
+                'entertainments.poster_tv_url as poster_tv_url',
+                'entertainments.thumbnail_url as thumbnail_url',
+                'entertainments.trailer_url',
+                'entertainments.trailer_url_type',
+                'entertainments.movie_access',
+            ])
+            ->leftJoin('plan', 'plan.id', '=', 'entertainments.plan_id')
+            ->with('episodeV2')
+            ->where('entertainments.type', 'tvshow')
+            ->whereHas('episodeV2')
+            ->where('entertainments.status', 1)
+            ->groupBy('entertainments.id')
+            ->orderBy('sno_order', 'ASC');
+
+        if ($networkId != 'null' && !empty($networkId)) {
+            $tvshowList->whereRaw(
+                "FIND_IN_SET(?, REPLACE(entertainments.network_id, ' ', ''))",
+                [$networkId]
+            );
+        }
+
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $tvshowList->where(function ($query) use ($searchTerm) {
+                $query->where('entertainments.name', 'like', "%{$searchTerm}%")
+                    ->orWhereHas('entertainmentGenerMappings.genre', function ($genreQuery) use ($searchTerm) {
+                        $genreQuery->where('name', 'like', "%{$searchTerm}%");
+                    });
+            });
+        }
+
+        if (isset($request->is_restricted)) {
+            $tvshowList->where('is_restricted', $request->is_restricted);
+        }
+
+        if (!empty(getCurrentProfileSession('is_child_profile'))) {
+            $tvshowList->where('is_restricted', 0);
+        }
+
+        $episodeDateRange = $this->resolveEmbedEpisodeDateRange($networkId);
+
+        if ($episodeDateRange) {
+            $tvshowList->whereHas('episodeV2', function ($query) use ($episodeDateRange) {
+                $query->where('status', 1)
+                    ->whereNull('deleted_at')
+                    ->whereBetween('created_at', [$episodeDateRange['start'], $episodeDateRange['end']]);
+            });
+        }
+
+        $tvshows = $tvshowList->orderByDesc(
+            Episode::select('created_at')
+                ->whereColumn('episodes.entertainment_id', 'entertainments.id')
+                ->where('episodes.status', 1)
+                ->whereNull('episodes.deleted_at')
+                ->when($episodeDateRange, function ($query) use ($episodeDateRange) {
+                    $query->whereBetween('created_at', [$episodeDateRange['start'], $episodeDateRange['end']]);
+                })
+                ->latest('created_at')
+                ->limit(1)
+        )->paginate($perPage);
+        $responseData = CommonContentResourceV3::collection($tvshows)->toArray($request);
+
+        $html = '';
+        if (!empty($responseData)) {
+            $html .= view('frontend::components.card.card_tvshow', ['values' => $responseData])->render();
+        }
+
+        return response()->json([
+            'status' => true,
+            'html' => $html,
+            'message' => __('movie.tvshow_list'),
+            'hasMore' => $tvshows->hasMorePages(),
+        ], 200);
+    }
 
 
 
@@ -3804,9 +3885,103 @@ class EntertainmentsController extends Controller
         ], 200);
     }
 
-    
-    
-    
+    /**
+     * Resolve embed list date range from latest episode additions.
+     * today -> previous days (current week) -> previous weeks -> months -> latest available.
+     */
+    private function resolveEmbedEpisodeDateRange(?string $networkId): ?array
+    {
+        $today = Carbon::today();
+        $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
 
+        // 1-3: Prefer the most recent day in the current week that has new episodes.
+        for ($date = $today->copy(); $date->gte($startOfWeek); $date->subDay()) {
+            if ($this->hasEmbedEpisodesOnDate($networkId, $date)) {
+                return [
+                    'start' => $date->copy()->startOfDay(),
+                    'end' => $date->copy()->endOfDay(),
+                ];
+            }
+        }
+
+        // 4-5: No episodes in the current week — walk back full weeks.
+        $weekStart = $startOfWeek->copy()->subWeek();
+        for ($weekOffset = 0; $weekOffset < 3; $weekOffset++) {
+            $weekEnd = $weekStart->copy()->endOfWeek(Carbon::MONDAY);
+            if ($this->hasEmbedEpisodesBetween($networkId, $weekStart, $weekEnd)) {
+                return [
+                    'start' => $weekStart->copy()->startOfDay(),
+                    'end' => $weekEnd->copy()->endOfDay(),
+                ];
+            }
+            $weekStart->subWeek();
+        }
+
+        // 6: Fall back to current month, then previous month.
+        $monthStart = $today->copy()->startOfMonth();
+        if ($this->hasEmbedEpisodesBetween($networkId, $monthStart, $today)) {
+            return [
+                'start' => $monthStart->copy()->startOfDay(),
+                'end' => $today->copy()->endOfDay(),
+            ];
+        }
+
+        $previousMonthStart = $today->copy()->subMonth()->startOfMonth();
+        $previousMonthEnd = $today->copy()->subMonth()->endOfMonth();
+        if ($this->hasEmbedEpisodesBetween($networkId, $previousMonthStart, $previousMonthEnd)) {
+            return [
+                'start' => $previousMonthStart->copy()->startOfDay(),
+                'end' => $previousMonthEnd->copy()->endOfDay(),
+            ];
+        }
+
+        // Last resort: use the single most recent episode date available.
+        $latestDate = $this->embedEpisodeBaseQuery($networkId)
+            ->max(DB::raw('DATE(episodes.created_at)'));
+
+        if ($latestDate) {
+            $latest = Carbon::parse($latestDate);
+
+            return [
+                'start' => $latest->copy()->startOfDay(),
+                'end' => $latest->copy()->endOfDay(),
+            ];
+        }
+
+        return null;
+    }
+
+    private function embedEpisodeBaseQuery(?string $networkId)
+    {
+        return Episode::query()
+            ->where('episodes.status', 1)
+            ->whereNull('episodes.deleted_at')
+            ->whereHas('entertainmentdata', function ($query) use ($networkId) {
+                $query->where('type', 'tvshow')
+                    ->where('status', 1)
+                    ->whereNull('deleted_at');
+
+                if ($networkId != 'null' && !empty($networkId)) {
+                    $query->whereRaw(
+                        "FIND_IN_SET(?, REPLACE(network_id, ' ', ''))",
+                        [$networkId]
+                    );
+                }
+            });
+    }
+
+    private function hasEmbedEpisodesOnDate(?string $networkId, Carbon $date): bool
+    {
+        return $this->embedEpisodeBaseQuery($networkId)
+            ->whereDate('episodes.created_at', $date)
+            ->exists();
+    }
+
+    private function hasEmbedEpisodesBetween(?string $networkId, Carbon $start, Carbon $end): bool
+    {
+        return $this->embedEpisodeBaseQuery($networkId)
+            ->whereBetween('episodes.created_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+            ->exists();
+    }
 
 }

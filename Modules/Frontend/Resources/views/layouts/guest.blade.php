@@ -21,6 +21,7 @@
 
     <link rel="stylesheet" href="{{ asset('modules/frontend/style.css') }}">
     <link rel="stylesheet" href="{{ asset('modules/frontend/custom_style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/customizer.css') }}">
     <link rel="stylesheet" href="{{ asset('iconly/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('phosphor-icons/regular/style.css') }}">
     <link rel="stylesheet" href="{{ asset('phosphor-icons/fill/style.css') }}">
