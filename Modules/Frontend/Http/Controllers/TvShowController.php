@@ -7,10 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Modules\Entertainment\Transformers\TvshowDetailResource;
-<<<<<<< HEAD
-=======
 use Modules\Entertainment\Transformers\EpisodeResource;
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
 use Modules\Entertainment\Transformers\TvshowResource;
 use Modules\Entertainment\Models\Watchlist;
 use Modules\Entertainment\Models\Like;
@@ -34,11 +31,7 @@ use App\Services\RecommendationService;
 
 use Modules\Frontend\Models\PayPerView;
 
-<<<<<<< HEAD
-
-=======
 use Carbon\Carbon;
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
 use Illuminate\Support\Facades\DB;
 
 
@@ -62,45 +55,6 @@ class TvShowController extends Controller
 
     public function tvShowList(Request $request,$slug="",$language = null)
     {
-<<<<<<< HEAD
-        
-        
-       // $networkId = abs($request->query('networkid'));
-
-     ////  echo "=============".$slug;
-       
-      //// exit;
-        
-
-
-        $user_id = auth()->id();
-        $user = Auth::user();
-
-    $network_name="";
-    $network_banner_image="";
-    $networkId=0;
-    if(!empty($slug))
-    {
-        ///$network = DB::table('series_networks')
-           ///     ->select('id', 'name', 'image','banner_image')
-            ////    ->where('id', $networkId)
-            ////    ->first();
-                
-                
-          ///      ->where('network_list_active', 1)      
-        $network = DB::table('series_networks')
-                ->select('id', 'name', 'image','banner_image')
-                ->where('slug', $slug)
-          
-                ->first();        
-            
-        $network_name=$network->name;
-        $networkId=$network->id;
-        $network_banner_image=$network->banner_image;
-        
-        
-    }  
-=======
         $data = $this->resolveTvShowListData($slug);
 
         return view('frontend::tvShow', $data);
@@ -126,22 +80,12 @@ class TvShowController extends Controller
             $networkId = $network->id;
             $network_banner_image = $network->banner_image;
         }
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
 
         $featured_tvshow = Banner::where('banner_for', 'tv_show')
             ->where('status', 1)
             ->limit(5)
             ->get();
         $sliders = SliderResourceV3::collection($featured_tvshow);
-<<<<<<< HEAD
-        $sliders =  $sliders->toArray(request());
-
-        return view('frontend::tvShow', compact(
-
-            'sliders','networkId','network_name','network_banner_image'
-
-        ));
-=======
         $sliders = $sliders->toArray(request());
 
         return compact('sliders', 'networkId', 'network_name', 'network_banner_image');
@@ -272,7 +216,6 @@ class TvShowController extends Controller
             ->whereBetween('episodes.created_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
             ->orderByDesc('episodes.created_at')
             ->get();
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
     }
 
     public function tvshowDetail(Request $request, $slug)
@@ -475,13 +418,6 @@ class TvShowController extends Controller
 
     public function episodeDetail(Request $request, $slug)
     {
-<<<<<<< HEAD
-        
-        
-      
-        
-=======
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
         $user_id = auth()->id();
         $continue_watch = $request->boolean('continue_watch', false);
         $cacheKey = "episode_details_{$slug}_user_{$user_id}";
