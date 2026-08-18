@@ -8,7 +8,7 @@
     <meta name="baseUrl" content="{{env('APP_URL')}}" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <title>Frontend Module - {{ config('app.name', 'Laravel') }}</title>
+    <title>@yield('title', GetSettingValue('app_name'))</title>
 
     <meta name="description" content="{{ $description ?? '' }}">
 
@@ -35,7 +35,7 @@
     
 </head>
 
-<body>
+<body @hasSection('body_class') class="@yield('body_class')" @endif>
    
 
     @yield('content')
