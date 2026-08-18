@@ -59,14 +59,7 @@ class TvShowController extends Controller
         return view('frontend::tvShow', $data);
     }
 
-    public function tvShowListEmbed(Request $request, $slug = 'e360films')
-    {
-        $data = $this->resolveTvShowListData($slug, true);
-
-        return view('frontend::tvShowEmbed', $data);
-    }
-
-    private function resolveTvShowListData(string $slug = '', bool $requireNetwork = false): array
+    private function resolveTvShowListData(string $slug = ''): array
     {
         $network_name = '';
         $network_banner_image = '';
@@ -85,8 +78,6 @@ class TvShowController extends Controller
             $network_name = $network->name;
             $networkId = $network->id;
             $network_banner_image = $network->banner_image;
-        } elseif ($requireNetwork) {
-            abort(404);
         }
 
         $featured_tvshow = Banner::where('banner_for', 'tv_show')
