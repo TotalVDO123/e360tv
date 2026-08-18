@@ -96,7 +96,11 @@ Route::get('/movie-details/{id}', [MovieController::class, 'movieDetails'])->mid
 Route::get('/tv-shows', [TvShowController::class, 'tvShowList'])->middleware('checkModule')->name('tv-shows');  // by client
 Route::get('/tv-shows/{slug}', [TvShowController::class, 'tvShowList'])->middleware('checkModule')->name('tv-shows');
 Route::get('/tvshow', [TvShowController::class, 'tvshow_series_list'])->middleware('checkModule')->name('tvshow');
+<<<<<<< HEAD
 
+=======
+Route::get('/embed/tv-shows', [TvShowController::class, 'tvShowEmbedEpisodes'])->name('tv-shows.embed');
+>>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
 
 Route::get('/tvshow-details/{id}', [TvShowController::class, 'tvshowDetail'])->middleware('checkModule')->name('tvshow-details');
 Route::get('/episode-details/{id}', [TvShowController::class, 'episodeDetail'])->middleware('checkModule')->name('episode-details');
