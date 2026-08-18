@@ -96,9 +96,19 @@ class FrontendController extends Controller
             'timestamp' => now()->format('Y-m-d-H')
         ]));
 
+        
+        /*
+        
         // Use Redis cache with 5 minutes TTL
         $cachedResult = Cache::remember($cacheKey, 1, function () use ($request, $user_id, $profile_id, $device_type) {
             // Get all settings with names and values in one call
+           
+           
+           
+         ////////////////////////////////////////////////////////////////////////  
+           
+           
+           
             $settings = [
                 'top-10' => MobileSetting::getNameAndValueBySlug('top-10'),
                 'latest-movies' => MobileSetting::getNameAndValueBySlug('latest-movies'),
@@ -544,8 +554,8 @@ class FrontendController extends Controller
             return $responseData;
         });
 
-        
-        
+        */
+        /////////////////////////////////////////////////
         
         $seriesNetworks = DB::table('series_networks')
         ->select('id', 'order', 'parent_id', 'name', 'image', 'banner_image', 'slug')
@@ -554,7 +564,7 @@ class FrontendController extends Controller
         ->get();
 
         
- 
+        $cachedResult=[];
 
         return view('frontend::index', compact('user_id', 'cachedResult','seriesNetworks'));
     }

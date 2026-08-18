@@ -299,6 +299,9 @@ if($content_type=='livetv')
 {
 ?>
 
+<script src="{{ asset('js/live-offline-message.js') }}?v=1"></script>
+
+
 
 
 <script>

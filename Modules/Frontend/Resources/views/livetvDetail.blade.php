@@ -6,18 +6,7 @@
 @section('content')
     
     
-      @php
-       
-       ///echo "=======================".$is_live;
-       
-      /// echo "-----".$data['trailer_url'];
-       ///echo "*****".$data['server_url'];
-       
-        //$data = $data['data'];
-        ///echo "<pre>";
-        //print_r($data);
-        ///exit;
-    @endphp
+     
     
     <div id="thumbnail-section">
         @php
@@ -233,12 +222,6 @@
    
           
           ?>  
-
-                    
-                    
-                    
-                    
-                    
                         <div class="col">
                         <div class="position-relative">    
                             <a href="{{ route('livetv-details', ['id' => $suggested['slug']]) }}"

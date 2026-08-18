@@ -116,6 +116,14 @@ body{
 $currentDateTime = date('Y-m-d H:i:s');
 $today = date('Y-m-d');
 
+
+
+
+
+$today = date('l');
+$currentTime = date('H:i:s');
+
+
 $liveQuery = DB::table('live_tv_channel as c')
     ->join(
         'live_tv_stream_content_mapping as m',
@@ -131,9 +139,13 @@ $liveQuery = DB::table('live_tv_channel as c')
         DB::raw('0 as sort_order')
     )
     ->where('c.status', 1)
-    ->whereDate('m.upcoming_date', $today)
-    ->where('m.upcoming_date', '<=', $currentDateTime)
-    ->where('m.upcoming_end_date', '>=', $currentDateTime);
+
+    // Check today's DAY only
+    ->whereRaw("DAYNAME(m.upcoming_date) = ?", [$today])
+
+    // Check TIME only
+    ->whereRaw("TIME(m.upcoming_date) <= ?", [$currentTime])
+    ->whereRaw("TIME(m.upcoming_end_date) >= ?", [$currentTime]);
 
 
 $otherQuery = DB::table('live_tv_channel as c')
@@ -151,10 +163,14 @@ $otherQuery = DB::table('live_tv_channel as c')
         DB::raw('1 as sort_order')
     )
     ->where('c.status', 1)
-    ->whereDate('m.upcoming_date', $today)
-    ->where(function ($q) use ($currentDateTime) {
-        $q->where('m.upcoming_date', '>', $currentDateTime)
-          ->orWhere('m.upcoming_end_date', '<', $currentDateTime);
+
+    // Check today's DAY only
+    ->whereRaw("DAYNAME(m.upcoming_date) >= ?", [$today])
+
+    // Not currently LIVE
+    ->where(function ($q) use ($currentTime) {
+        $q->whereRaw("TIME(m.upcoming_date) > ?", [$currentTime])
+          ->orWhereRaw("TIME(m.upcoming_end_date) < ?", [$currentTime]);
     });
 
 
@@ -168,16 +184,9 @@ $data_channels = $liveQuery
         return (array) $item;
     })
     ->toArray();
-
-
-
-    
-    
       
       
-    // echo "<pre>";
-    ///  print_r( $data_channels);        
-
+   
 ?>
 
      @if (isenablemodule('livetv') == 1)

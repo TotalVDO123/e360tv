@@ -276,6 +276,7 @@ public function moviesListBylanguage($language)
             ->where('status', 1)
             ->where('deleted_at', null) // Only show active suggestions
             ->with('TvCategory') // Eager load the category
+            ->limit(10)
             ->get();
 
         $suggestions = LiveTvChannelResourceV3::collection($suggestions)->toArray(request());
@@ -295,6 +296,8 @@ public function moviesListBylanguage($language)
             $data['trailer_url'] = Crypt::encryptString($livetv->TvChannelStreamContentMappings['trailer_url']);
         }
 
+
+    
         return view('frontend::livetvDetail', compact('data', 'suggestions','is_live','tv_channel_id'));
     }
 

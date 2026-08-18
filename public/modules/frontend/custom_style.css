@@ -90,4 +90,14 @@ bg-body {
     	overflow:visible;
 }
 
+.moreinfinity-card .tv-series-network-slider .slick-slide {
+	padding: 0 var(--spacing, 8px) !important;
+}
 
+.moreinfinity-card .tv-series-network-slider .slick-item .image-box img {
+	width: 100% !important;
+	height: auto !important;
+	aspect-ratio: 230 / 390;
+	object-fit: cover;
+	display: block;
+}
