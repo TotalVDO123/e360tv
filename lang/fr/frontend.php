@@ -56,10 +56,7 @@ return [
     'movies' => 'Films',
     'movie' => 'Movie',
     'tvshows' => 'Séries TV',
-<<<<<<< HEAD
-=======
     'embeded_tvshows' => 'Épisodes',
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
     'tvshow' => 'TV Show',
     'watch_now' => 'Regarder maintenant',
     'rate_this' => 'Évaluer ceci',
