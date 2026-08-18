@@ -187,13 +187,6 @@ class EntertainmentsController extends Controller
     
   $networkId = $request->query('networkId');
    
-<<<<<<< HEAD
-   
-   //echo "=============11".$networkId;
-   
-   ///exit;
-=======
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
 
     // Base query
     $tvshowList = Entertainment::query()
@@ -239,21 +232,9 @@ class EntertainmentsController extends Controller
          $tvshowList->whereRaw(
             "FIND_IN_SET(?, REPLACE(entertainments.network_id, ' ', ''))",
             [$networkId]
-<<<<<<< HEAD
-        );
-
-       // ->orWhere('entertainments.network_id', $networkId);
-    
-       }
-    
-   
-  
-
-=======
         );    
        }
     
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
     // Search filter
     if ($request->filled('search')) {
         $searchTerm = $request->search;
@@ -265,13 +246,6 @@ class EntertainmentsController extends Controller
         });
     }
     
-<<<<<<< HEAD
-    
-    
-    
-    
-=======
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
 
     if (isset($request->is_restricted)) {
         $tvshowList->where('is_restricted', $request->is_restricted);
@@ -315,13 +289,6 @@ class EntertainmentsController extends Controller
     ], 200);
 }
 
-<<<<<<< HEAD
-
-
-
-
-=======
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
     public function movieDetails(Request $request)
     {
 
@@ -3819,12 +3786,4 @@ class EntertainmentsController extends Controller
         ], 200);
     }
 
-<<<<<<< HEAD
-    
-    
-    
-
-
-=======
->>>>>>> 725da5b48051e0a70583fc8dc361d18ce44ee6ee
 }
