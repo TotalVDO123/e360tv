@@ -57,14 +57,14 @@ body{
 <?php 
 
 
-
+/* 
        date_default_timezone_set('America/Los_Angeles');
         $currentDateTime = date('Y-m-d H:i:s');
      // echo "================".now();
       
    
      $start = date('Y-m-d') . ' 00:00:00';
-    $end   = date('Y-m-d') . ' 23:59:59';
+    $end   = date('Y-m-d') . ' 23:59:59'; */
       
     
       
@@ -105,7 +105,7 @@ body{
     
     
     
-   $currentDateTime = now();
+   //$currentDateTime = now();
    
 //echo "=============".   date('l');
 ///exit;
@@ -113,7 +113,7 @@ body{
 
 
 
-$currentDateTime = date('Y-m-d H:i:s');
+/* $currentDateTime = date('Y-m-d H:i:s');
 $today = date('Y-m-d');
 
 
@@ -183,7 +183,70 @@ $data_channels = $liveQuery
     ->map(function ($item) {
         return (array) $item;
     })
-    ->toArray();
+    ->toArray(); */
+
+    date_default_timezone_set('America/Los_Angeles');
+
+$currentDateTime = date('Y-m-d H:i:s');
+$today           = date('Y-m-d');
+$currentDay      = date('l');   // e.g. Tuesday
+$currentTime     = date('H:i:s');
+
+$rows = DB::table('live_tv_channel as c')
+    ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
+    ->select('c.*', 'm.upcoming_date', 'm.upcoming_end_date', 'm.recurring_program')
+    ->where('c.status', 1)
+    ->whereNull('c.deleted_at')
+    ->whereNull('m.deleted_at')
+    ->where(function ($q) use ($today, $currentDay) {
+        // One-time: scheduled for today
+        $q->where(function ($q2) use ($today) {
+            $q2->where('m.recurring_program', 0)
+               ->whereDate('m.upcoming_date', $today);
+        })
+        // Recurring: matches today's weekday
+        ->orWhere(function ($q2) use ($currentDay) {
+            $q2->where('m.recurring_program', 1)
+               ->whereRaw('DAYNAME(m.upcoming_date) = ?', [$currentDay]);
+        });
+    })
+    ->get();
+
+    $data_channels = $rows->map(function ($item) use ($currentDateTime, $currentTime, $today) {
+    $item = (array) $item;
+
+    if ($item['recurring_program'] == 1) {
+        $startTime = date('H:i:s', strtotime($item['upcoming_date']));
+        $endTime   = date('H:i:s', strtotime($item['upcoming_end_date']));
+
+        if ($startTime <= $currentTime && $endTime >= $currentTime) {
+            $item['sort_order'] = 0; // live now
+        } elseif ($startTime > $currentTime) {
+            $item['sort_order'] = 1; // upcoming
+        } else {
+            $item['sort_order'] = 2; // past (e.g. 08:00-08:30 at 14:39)
+        }
+        $item['sort_upcoming'] = $today . ' ' . $startTime;
+    } else {
+        if ($item['upcoming_date'] <= $currentDateTime && $item['upcoming_end_date'] >= $currentDateTime) {
+            $item['sort_order'] = 0;
+        } elseif ($item['upcoming_date'] > $currentDateTime) {
+            $item['sort_order'] = 1;
+        } else {
+            $item['sort_order'] = 2;
+        }
+        $item['sort_upcoming'] = $item['upcoming_date'];
+    }
+
+    return $item;
+})
+->sortBy([
+    ['sort_order', 'asc'],
+    ['sort_upcoming', 'asc'],
+])
+->take(18)
+->values()
+->toArray();
       
       
    

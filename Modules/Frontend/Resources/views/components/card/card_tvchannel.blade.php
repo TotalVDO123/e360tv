@@ -28,25 +28,51 @@
 }
 
 .live-dot {
+    display: inline-block;
     width: 10px;
     height: 10px;
     background: #f2b400;
     border-radius: 50%;
     box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+    animation: live-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes live-dot-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+    }
+    50% {
+        opacity: 0.35;
+        transform: scale(1.2);
+        box-shadow: 0 0 14px rgba(255, 215, 0, 1);
+    }
+}
+
+.next-live-badge {
+    animation: next-live-pulse 1.6s ease-in-out infinite;
+}
+
+.next-live-dot {
+    display: inline-block;
+    animation: next-live-dot-pulse 1.6s ease-in-out infinite;
 }
 </style>
 
 
 
- <?php
+<?php
+ date_default_timezone_set('America/Los_Angeles');
 
-              $streamData = DB::table('live_tv_stream_content_mapping')
-            ->where('tv_channel_id', $value['id'])
-            ->first();
-            
-       
-           
-            $upcoming_date = $streamData->upcoming_date ?? '';
+$streamData = (object) [
+    'upcoming_date' => $value['upcoming_date'] ?? null,
+    'upcoming_end_date' => $value['upcoming_end_date'] ?? null,
+    'recurring_program' => $value['recurring_program'] ?? null,
+];
+$sortOrder = isset($value['sort_order']) ? (int) $value['sort_order'] : null;
+
+$upcoming_date = $streamData->upcoming_date ?? '';
            $playlist="";
             if (!empty($value['server_url']))
             {
@@ -153,116 +179,34 @@
 $currentDateTime = date('Y-m-d H:i:s');
 
 $status = 'Upcoming';
-
+$day = date('l', strtotime($streamData->upcoming_date));
 if (!empty($streamData->recurring_program)) {
     
-    
-  
-           /////////////////////////////////////////////////////
-           
-           $currentDateTime = date('Y-m-d H:i:s');
+    if ($sortOrder === 0) {
+    ?>
 
-    // Current day + time
-    $currentDay  = date('l');
-    $currentTime = date('H:i:s');
+        <span class="live-now-btn position-absolute top-0 end-0 m-2">
+            <span class="live-dot"></span>
+            LIVE NOW
+        </span>
 
-    // Start day + time
-    $startDay  = date('l', strtotime($streamData->upcoming_date));
-    $startTime = date('H:i:s', strtotime($streamData->upcoming_date));
-
-    // End day + time
-    $endDay  = date('l', strtotime($streamData->upcoming_end_date));
-    $endTime = date('H:i:s', strtotime($streamData->upcoming_end_date));
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Convert day + time to a comparable timestamp
-    |--------------------------------------------------------------------------
-    */
-
-    $weekDays = [
-        'Sunday'    => 0,
-        'Monday'    => 1,
-        'Tuesday'   => 2,
-        'Wednesday' => 3,
-        'Thursday'  => 4,
-        'Friday'    => 5,
-        'Saturday'  => 6,
-    ];
-
-    $current = strtotime(
-        '2026-01-04 ' . $currentTime
-    ) + ($weekDays[$currentDay] * 86400);
-
-    $startTime = strtotime(
-        '2026-01-04 ' . $startTime
-    ) + ($weekDays[$startDay] * 86400);
-
-    $endTime = strtotime(
-        '2026-01-04 ' . $endTime
-    ) + ($weekDays[$endDay] * 86400);
-
-
- 
-
-  
-    // Live now
-    if ($current >= $startTime && $current <= $endTime && $currentDay== $startDay ) {
-
-     
+    <?php
+    } else {
         ?>
-
-                 <span class="live-now-btn position-absolute top-0 end-0 m-2">
-                    <span class="live-dot"></span>
-                    LIVE NOW
-                </span>
-        
-                <?php
-        
-            } else {
-        
-               $day = date('l', strtotime($streamData->upcoming_date));
-                ?>
-        
-              <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">
+        <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">
             🟡 <strong>NEXT LIVE</strong><br>
             {{ $day }} • {{ \Carbon\Carbon::parse($streamData->upcoming_date)->format('h:i A') }} PT
         </span>
-
-
         <?php
     }
-
-           
-           
-   
-   
-   
-            ////////////////////////////////////////////////
-   
-  
-   
-   
-}
-    else
-    {
-                    $day = date('l', strtotime($streamData->upcoming_date));
+}else{              
     ?>    
-        
-        
-        <?php /* ?>
-                            <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">
-                                🟡 <strong>NEXT LIVE</strong><br>
-                                {{ $day }} • {{ \Carbon\Carbon::parse($upcoming_date)->format('h:i A') }} PT
-                            </span> 
-              
-              <?php */ ?>              
-        
+        <!-- <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">
+            🟡 <strong>NEXT LIVE</strong><br>
+            {{ $day }} • {{ \Carbon\Carbon::parse($upcoming_date)->format('h:i A') }} PT
+        </span> -->
      <?php   
     }
-    
- 
  ?>                   
 
 
