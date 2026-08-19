@@ -113,6 +113,8 @@ body{
 
 
 /*
+=======
+
 $currentDateTime = date('Y-m-d H:i:s');
 $today = date('Y-m-d');
 
@@ -165,7 +167,11 @@ $otherQuery = DB::table('live_tv_channel as c')
     ->where('c.status', 1)
 
     // Check today's DAY only
+<<<<<<< HEAD
     ->whereRaw("DAYNAME(m.upcoming_date)= ?", [$today])
+=======
+    ->whereRaw("DAYNAME(m.upcoming_date) >= ?", [$today])
+>>>>>>> origin/main
 
     // Not currently LIVE
     ->where(function ($q) use ($currentTime) {
@@ -185,6 +191,7 @@ $data_channels = $liveQuery
     })
     ->toArray();
       
+<<<<<<< HEAD
     */ 
     
     
