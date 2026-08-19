@@ -17,6 +17,7 @@ RewriteCond %{REQUEST_FILENAME} -d [OR]
    RewriteRule ^ server.php
 </IfModule>
 
+
 # php -- BEGIN cPanel-generated handler, do not edit
 # Set the “ea-php84” package as the default “PHP” programming language.
 <IfModule mime_module>
@@ -35,7 +36,7 @@ RewriteCond %{REQUEST_FILENAME} -d [OR]
    php_value max_execution_time 1000
    php_value max_input_time -1
    php_value max_input_vars 1000
-   php_value memory_limit 3000M
+   php_value memory_limit 256M
    php_value post_max_size 30000M
    php_value session.gc_maxlifetime 1440
    php_value session.save_path "/var/cpanel/php/sessions/ea-php84"
@@ -49,7 +50,7 @@ RewriteCond %{REQUEST_FILENAME} -d [OR]
    php_value max_execution_time 1000
    php_value max_input_time -1
    php_value max_input_vars 1000
-   php_value memory_limit 3000M
+   php_value memory_limit 256M
    php_value post_max_size 30000M
    php_value session.gc_maxlifetime 1440
    php_value session.save_path "/var/cpanel/php/sessions/ea-php84"

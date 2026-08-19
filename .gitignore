@@ -35,3 +35,7 @@ auth.json
 
 /storage/media-library/**/*
 _ide_helper.php
+*.tar.gz
+*.zip
+error_log
+/public/error_log

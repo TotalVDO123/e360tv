@@ -208,7 +208,7 @@ $data = DB::table('series_networks as sn')
       
       @if(isenablemodule('livetv'))
       <li class="nav-item">
-        <a class="nav-link"  href="{{url('live_list')}}">
+        <a class="nav-link"  href="{{url('livetv-channels/live')}}">
           <span class="item-name">{{__('frontend.livetv')}}</span>
         </a>
       </li>

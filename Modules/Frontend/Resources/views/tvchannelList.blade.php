@@ -40,7 +40,8 @@
         const per_page = 15;
         const baseUrl = document.querySelector('meta[name="baseUrl"]').getAttribute('content');
         const categoryId = "{{ $tvcategory_id ?? '' }}";
-        let apiUrl = `${baseUrl}/api/channel-list?is_ajax=1&per_page=${per_page}`;
+        //let apiUrl = `${baseUrl}/api/channel-list?is_ajax=1&per_page=${per_page}`;
+          let apiUrl = `${baseUrl}/api/channel-list-sequence?is_ajax=1&per_page=${per_page}`;
         if (categoryId) {
             apiUrl += `&category_id=${categoryId}`;
         }

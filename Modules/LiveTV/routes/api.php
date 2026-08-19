@@ -6,7 +6,7 @@ Route::get('livetv-category-list', [LiveTVsController::class, 'liveTvCategoryLis
 Route::get('livetv-dashboard', [LiveTVsController::class, 'liveTvDashboard']);
 Route::get('livetv-details', [LiveTVsController::class, 'liveTvDetails']);
 Route::get('channel-list', [LiveTVsController::class, 'channelList']);
-
+Route::get('channel-list-sequence', [LiveTVsController::class, 'channelListSequence']);
 Route::group(['middleware' => 'auth:sanctum'], function () {
 
 });
