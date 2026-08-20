@@ -8,7 +8,7 @@
     <meta name="baseUrl" content="{{env('APP_URL')}}" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <title>Frontend Module - {{ config('app.name', 'Laravel') }}</title>
+    <title>@yield('title', GetSettingValue('app_name'))</title>
 
     <meta name="description" content="{{ $description ?? '' }}">
 
@@ -21,6 +21,7 @@
 
     <link rel="stylesheet" href="{{ asset('modules/frontend/style.css') }}">
     <link rel="stylesheet" href="{{ asset('modules/frontend/custom_style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/customizer.css') }}">
     <link rel="stylesheet" href="{{ asset('iconly/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('phosphor-icons/regular/style.css') }}">
     <link rel="stylesheet" href="{{ asset('phosphor-icons/fill/style.css') }}">
@@ -34,7 +35,7 @@
     
 </head>
 
-<body>
+<body @hasSection('body_class') class="@yield('body_class')" @endif>
    
 
     @yield('content')

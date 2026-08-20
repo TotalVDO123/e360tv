@@ -56,6 +56,7 @@ return [
     'movies' => 'Films',
     'movie' => 'Movie',
     'tvshows' => 'Séries TV',
+    'embeded_tvshows' => 'Épisodes',
     'tvshow' => 'TV Show',
     'watch_now' => 'Regarder maintenant',
     'rate_this' => 'Évaluer ceci',

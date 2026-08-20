@@ -56,14 +56,14 @@ body{
 <?php 
 
 
-
+/* 
        date_default_timezone_set('America/Los_Angeles');
         $currentDateTime = date('Y-m-d H:i:s');
      // echo "================".now();
       
    
      $start = date('Y-m-d') . ' 00:00:00';
-    $end   = date('Y-m-d') . ' 23:59:59';
+    $end   = date('Y-m-d') . ' 23:59:59'; */
       
     
       
@@ -104,7 +104,7 @@ body{
     
     
     
-   $currentDateTime = now();
+   //$currentDateTime = now();
    
 //echo "=============".   date('l');
 ///exit;
@@ -114,7 +114,7 @@ body{
 /*
 =======
 
-$currentDateTime = date('Y-m-d H:i:s');
+/* $currentDateTime = date('Y-m-d H:i:s');
 $today = date('Y-m-d');
 
 
@@ -166,11 +166,7 @@ $otherQuery = DB::table('live_tv_channel as c')
     ->where('c.status', 1)
 
     // Check today's DAY only
-
-    ->whereRaw("DAYNAME(m.upcoming_date)= ?", [$today])
-
     ->whereRaw("DAYNAME(m.upcoming_date) >= ?", [$today])
-
 
     // Not currently LIVE
     ->where(function ($q) use ($currentTime) {
@@ -188,9 +184,7 @@ $data_channels = $liveQuery
     ->map(function ($item) {
         return (array) $item;
     })
-    ->toArray();
-      
-<<<<<<< HEAD
+    ->toArray(); */
     */ 
     
     
@@ -201,170 +195,70 @@ $currentDateTime = date('Y-m-d H:i:s');
 $today = date('l');              // Monday, Tuesday, etc.
 $currentTime = date('H:i:s');    // Current time only
 
+    date_default_timezone_set('America/Los_Angeles');
 
-/*
-|--------------------------------------------------------------------------
-| 1. LIVE RECORDS - TODAY'S DAY
-|--------------------------------------------------------------------------
-*/
+$currentDateTime = date('Y-m-d H:i:s');
+$today           = date('Y-m-d');
+$currentDay      = date('l');   // e.g. Tuesday
+$currentTime     = date('H:i:s');
 
-$liveQuery = DB::table('live_tv_channel as c')
-    ->join(
-        'live_tv_stream_content_mapping as m',
-        'c.id',
-        '=',
-        'm.tv_channel_id'
-    )
-    ->select(
-        'c.*',
-        'c.poster_url as poster_image',
-        'm.id as mapping_id',
-        'm.upcoming_date',
-        'm.upcoming_end_date',
-        'm.recurring_program'
-    )
+$rows = DB::table('live_tv_channel as c')
+    ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
+    ->select('c.*', 'm.upcoming_date', 'm.upcoming_end_date', 'm.recurring_program')
     ->where('c.status', 1)
-
-    // Check DAY only
-    ->whereRaw(
-        "DAYNAME(m.upcoming_date) = ?",
-        [$today]
-    )
-
-    // Check TIME only
-    ->whereRaw(
-        "TIME(m.upcoming_date) <= ?",
-        [$currentTime]
-    )
-    ->whereRaw(
-        "TIME(m.upcoming_end_date) >= ?",
-        [$currentTime]
-    )
+    ->whereNull('c.deleted_at')
+    ->whereNull('m.deleted_at')
+    ->where(function ($q) use ($today, $currentDay) {
+        // One-time: scheduled for today
+        $q->where(function ($q2) use ($today) {
+            $q2->where('m.recurring_program', 0)
+               ->whereDate('m.upcoming_date', $today);
+        })
+        // Recurring: matches today's weekday
+        ->orWhere(function ($q2) use ($currentDay) {
+            $q2->where('m.recurring_program', 1)
+               ->whereRaw('DAYNAME(m.upcoming_date) = ?', [$currentDay]);
+        });
+    })
     ->get();
 
+    $data_channels = $rows->map(function ($item) use ($currentDateTime, $currentTime, $today) {
+    $item = (array) $item;
 
-/*
-|--------------------------------------------------------------------------
-| 2. TODAY'S OTHER RECORDS
-|--------------------------------------------------------------------------
-*/
+    if ($item['recurring_program'] == 1) {
+        $startTime = date('H:i:s', strtotime($item['upcoming_date']));
+        $endTime   = date('H:i:s', strtotime($item['upcoming_end_date']));
 
-$otherQuery = DB::table('live_tv_channel as c')
-    ->join(
-        'live_tv_stream_content_mapping as m',
-        'c.id',
-        '=',
-        'm.tv_channel_id'
-    )
-    ->select(
-        'c.*',
-        'c.poster_url as poster_image',
-        'm.id as mapping_id',
-        'm.upcoming_date',
-        'm.upcoming_end_date',
-        'm.recurring_program'
-    )
-    ->where('c.status', 1)
+        if ($startTime <= $currentTime && $endTime >= $currentTime) {
+            $item['sort_order'] = 0; // live now
+        } elseif ($startTime > $currentTime) {
+            $item['sort_order'] = 1; // upcoming
+        } else {
+            $item['sort_order'] = 2; // past (e.g. 08:00-08:30 at 14:39)
+        }
+        $item['sort_upcoming'] = $today . ' ' . $startTime;
+    } else {
+        if ($item['upcoming_date'] <= $currentDateTime && $item['upcoming_end_date'] >= $currentDateTime) {
+            $item['sort_order'] = 0;
+        } elseif ($item['upcoming_date'] > $currentDateTime) {
+            $item['sort_order'] = 1;
+        } else {
+            $item['sort_order'] = 2;
+        }
+        $item['sort_upcoming'] = $item['upcoming_date'];
+    }
 
-    // Check DAY only
-    ->whereRaw(
-        "DAYNAME(m.upcoming_date) = ?",
-        [$today]
-    )
-
-    // Not currently LIVE
-    ->where(function ($q) use ($currentTime) {
-
-        // Upcoming
-        $q->whereRaw(
-            "TIME(m.upcoming_date) > ?",
-            [$currentTime]
-        )
-
-        // OR already completed
-        ->orWhereRaw(
-            "TIME(m.upcoming_end_date) < ?",
-            [$currentTime]
-        );
-    })
-
-    ->orderBy('m.upcoming_date', 'ASC')
-    ->get();
-
-
-/*
-|--------------------------------------------------------------------------
-| Get IDs from Query 1 and Query 2
-|--------------------------------------------------------------------------
-*/
-
-$excludedIds = $liveQuery
-    ->pluck('mapping_id')
-    ->merge($otherQuery->pluck('mapping_id'))
-    ->unique()
-    ->values()
-    ->toArray();
-
-
-/*
-|--------------------------------------------------------------------------
-| 3. ALL REMAINING RECORDS
-|--------------------------------------------------------------------------
-*/
-
-$thirdQuery = DB::table('live_tv_channel as c')
-    ->join(
-        'live_tv_stream_content_mapping as m',
-        'c.id',
-        '=',
-        'm.tv_channel_id'
-    )
-    ->select(
-        'c.*',
-        'c.poster_url as poster_image',
-        'm.id as mapping_id',
-        'm.upcoming_date',
-        'm.upcoming_end_date',
-        'm.recurring_program'
-    )
-    ->where('c.status', 1)
-
-    ->when(!empty($excludedIds), function ($query) use ($excludedIds) {
-        $query->whereNotIn('m.id', $excludedIds);
-    })
-
-    ->orderBy('m.upcoming_date', 'ASC')
-    ->get();
-
-
-/*
-|--------------------------------------------------------------------------
-| FINAL RESULT - MAXIMUM 18 RECORDS
-|--------------------------------------------------------------------------
-*/
-
-$data_channels = $liveQuery
-    ->concat($otherQuery)
-    ->concat($thirdQuery)
-
-    // IMPORTANT: Maximum 18 records TOTAL
-    ->take(18)
-
-    ->map(function ($item) {
-
-        $item->poster_image = setBaseUrlWithFileName(
-            $item->poster_image,
-            'image',
-            'livetv'
-        );
-
-        return (array) $item;
-    })
-    ->values()
-    ->toArray();
-    
-    
-    
+    return $item;
+})
+->sortBy([
+    ['sort_order', 'asc'],
+    ['sort_upcoming', 'asc'],
+])
+->take(18)
+->values()
+->toArray();
+      
+      
    
 ?>
 

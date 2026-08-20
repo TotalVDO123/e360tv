@@ -220,244 +220,118 @@ class LiveTVsController extends Controller
         
      public function channelListSequence(Request $request)
      {
-          ///'poster_image' => setBaseUrlWithFileName($this->poster_url, 'image', 'livetv'),
-            
-            ///'thumbnail_url' => setBaseUrlWithFileName($this->thumb_url , 'image', 'livetv'),
-         
-         
-         /*
-            date_default_timezone_set('America/Los_Angeles');
-            $currentDateTime = date('Y-m-d H:i:s');
-            $today = date('Y-m-d');
-            
-            $liveQuery = DB::table('live_tv_channel as c')
-                ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
-                ->select('c.*','c.poster_url as  poster_image','m.upcoming_date', 'm.upcoming_end_date', 'm.recurring_program')
-                ->where('c.status', 1)
-                ->whereDate('m.upcoming_date', $today)
-                ->where('m.upcoming_date', '<=', $currentDateTime)
-                ->where('m.upcoming_end_date', '>=', $currentDateTime);
-            
-            $otherQuery = DB::table('live_tv_channel as c')
-                ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
-                ->select('c.*','c.poster_url as  poster_image', 'm.upcoming_date', 'm.upcoming_end_date', 'm.recurring_program')
-                ->where('c.status', 1)
-                ->whereDate('m.upcoming_date', $today)
-                ->where(function ($q) use ($currentDateTime) {
-                    $q->where('m.upcoming_date', '>', $currentDateTime)
-                      ->orWhere('m.upcoming_end_date', '<', $currentDateTime);
-                });
+        date_default_timezone_set('America/Los_Angeles');
 
-           $channelList = $liveQuery
-    ->union($otherQuery)
-    ->get()
-    ->map(function ($item) {
+        $currentDateTime = date('Y-m-d H:i:s');
+        $today           = date('Y-m-d');
+        $currentDay      = date('l');
+        $currentTime     = date('H:i:s');
 
-        $item->poster_image = setBaseUrlWithFileName(
-            $item->poster_image,
-            'image',
-            'livetv'
-        );
+        $weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        $currentDayIndex = array_search($currentDay, $weekDays, true);
 
-        return (array) $item;
-    })
-    ->toArray();
-*/
+        $rows = DB::table('live_tv_channel as c')
+            ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
+            ->select(
+                'c.*',
+                'c.poster_url as poster_image',
+                'm.id as mapping_id',
+                'm.upcoming_date',
+                'm.upcoming_end_date',
+                'm.recurring_program'
+            )
+            ->where('c.status', 1)
+            ->when($request->filled('category_id'), function ($query) use ($request) {
+                $query->where('c.category_id', $request->category_id);
+            })
+            ->get();
 
+        $channelList = $rows
+            ->map(function ($item) use ($currentDateTime, $currentTime, $today, $weekDays, $currentDayIndex) {
+                $item = (array) $item;
 
-date_default_timezone_set('America/Los_Angeles');
+                if (!empty($item['recurring_program'])) {
+                    $showDay   = date('l', strtotime($item['upcoming_date']));
+                    $startTime = date('H:i:s', strtotime($item['upcoming_date']));
+                    $endTime   = date('H:i:s', strtotime($item['upcoming_end_date']));
+                    $showDayIndex = array_search($showDay, $weekDays, true);
+                    $dayRank = ($showDayIndex - $currentDayIndex + 7) % 7;
 
-$currentDateTime = date('Y-m-d H:i:s');
-$today = date('Y-m-d');
+                    if ($dayRank === 0) {
+                        if ($startTime <= $currentTime && $endTime >= $currentTime) {
+                            $item['sort_order'] = 0;
+                        } elseif ($startTime > $currentTime) {
+                            $item['sort_order'] = 1;
+                        } else {
+                            $item['sort_order'] = 2;
+                            $dayRank = 7;
+                        }
+                    } else {
+                        $item['sort_order'] = 1;
+                    }
 
+                    $item['day_rank'] = $dayRank;
+                    $item['sort_upcoming'] = $dayRank === 7
+                        ? $today . ' ' . $startTime
+                        : date('Y-m-d', strtotime($today . ' +' . $dayRank . ' days')) . ' ' . $startTime;
+                } else {
+                    $upcomingDate = date('Y-m-d', strtotime($item['upcoming_date']));
+                    $dayDiff = (int) floor((strtotime($upcomingDate) - strtotime($today)) / 86400);
 
-$today = date('l');              // Monday, Tuesday, etc.
-$currentTime = date('H:i:s');    // Current time only
+                    if ($dayDiff === 0) {
+                        if ($item['upcoming_date'] <= $currentDateTime && $item['upcoming_end_date'] >= $currentDateTime) {
+                            $item['sort_order'] = 0;
+                            $item['day_rank'] = 0;
+                        } elseif ($item['upcoming_date'] > $currentDateTime) {
+                            $item['sort_order'] = 1;
+                            $item['day_rank'] = 0;
+                        } else {
+                            $item['sort_order'] = 2;
+                            $item['day_rank'] = 7;
+                        }
+                    } elseif ($dayDiff > 0 && $dayDiff <= 6) {
+                        $item['sort_order'] = 1;
+                        $item['day_rank'] = $dayDiff;
+                    } else {
+                        $item['sort_order'] = 2;
+                        $item['day_rank'] = 7;
+                    }
 
+                    $item['sort_upcoming'] = $item['upcoming_date'];
+                }
 
-/*
-|--------------------------------------------------------------------------
-| 1. LIVE RECORDS - TODAY'S DAY
-|--------------------------------------------------------------------------
-*/
+                return $item;
+            })
+            ->sortBy([
+                ['day_rank', 'asc'],
+                ['sort_order', 'asc'],
+                ['sort_upcoming', 'asc'],
+            ])
+            ->values()
+            ->map(function ($item) {
+                $item['poster_image'] = setBaseUrlWithFileName(
+                    $item['poster_image'],
+                    'image',
+                    'livetv'
+                );
 
-$liveQuery = DB::table('live_tv_channel as c')
-    ->join(
-        'live_tv_stream_content_mapping as m',
-        'c.id',
-        '=',
-        'm.tv_channel_id'
-    )
-    ->select(
-        'c.*',
-        'c.poster_url as poster_image',
-        'm.id as mapping_id',
-        'm.upcoming_date',
-        'm.upcoming_end_date',
-        'm.recurring_program'
-    )
-    ->where('c.status', 1)
+                return $item;
+            })
+            ->toArray();
 
-    // Check DAY only
-    ->whereRaw(
-        "DAYNAME(m.upcoming_date) = ?",
-        [$today]
-    )
+        $html = '';
+        foreach ($channelList as $value) {
+            $html .= view('frontend::components.card.card_tvchannel', [
+                'value' => $value,
+            ])->render();
+        }
 
-    // Check TIME only
-    ->whereRaw(
-        "TIME(m.upcoming_date) <= ?",
-        [$currentTime]
-    )
-    ->whereRaw(
-        "TIME(m.upcoming_end_date) >= ?",
-        [$currentTime]
-    )
-    ->get();
-
-
-/*
-|--------------------------------------------------------------------------
-| 2. TODAY'S OTHER RECORDS
-|--------------------------------------------------------------------------
-*/
-
-$otherQuery = DB::table('live_tv_channel as c')
-    ->join(
-        'live_tv_stream_content_mapping as m',
-        'c.id',
-        '=',
-        'm.tv_channel_id'
-    )
-    ->select(
-        'c.*',
-        'c.poster_url as poster_image',
-        'm.id as mapping_id',
-        'm.upcoming_date',
-        'm.upcoming_end_date',
-        'm.recurring_program'
-    )
-    ->where('c.status', 1)
-
-    // Check DAY only
-    ->whereRaw(
-        "DAYNAME(m.upcoming_date) = ?",
-        [$today]
-    )
-
-    // Not currently LIVE
-    ->where(function ($q) use ($currentTime) {
-
-        // Upcoming
-        $q->whereRaw(
-            "TIME(m.upcoming_date) > ?",
-            [$currentTime]
-        )
-
-        // OR already completed
-        ->orWhereRaw(
-            "TIME(m.upcoming_end_date) < ?",
-            [$currentTime]
-        );
-    })
-
-    ->orderBy('m.upcoming_date', 'ASC')
-    ->get();
-
-
-/*
-|--------------------------------------------------------------------------
-| Get IDs from Query 1 and Query 2
-|--------------------------------------------------------------------------
-*/
-
-$excludedIds = $liveQuery
-    ->pluck('mapping_id')
-    ->merge($otherQuery->pluck('mapping_id'))
-    ->unique()
-    ->values()
-    ->toArray();
-
-
-/*
-|--------------------------------------------------------------------------
-| 3. ALL REMAINING RECORDS
-|--------------------------------------------------------------------------
-*/
-
-$thirdQuery = DB::table('live_tv_channel as c')
-    ->join(
-        'live_tv_stream_content_mapping as m',
-        'c.id',
-        '=',
-        'm.tv_channel_id'
-    )
-    ->select(
-        'c.*',
-        'c.poster_url as poster_image',
-        'm.id as mapping_id',
-        'm.upcoming_date',
-        'm.upcoming_end_date',
-        'm.recurring_program'
-    )
-    ->where('c.status', 1)
-    ->when(!empty($excludedIds), function ($query) use ($excludedIds) {
-        $query->whereNotIn('m.id', $excludedIds);
-    })
-    ->orderBy('m.upcoming_date', 'ASC')
-    ->get();
-
-
-/*
-|--------------------------------------------------------------------------
-| FINAL RESULT
-|--------------------------------------------------------------------------
-*/
-
-$channelList = $liveQuery
-    ->concat($otherQuery)
-    ->concat($thirdQuery)
-    ->map(function ($item) {
-
-        $item->poster_image = setBaseUrlWithFileName(
-            $item->poster_image,
-            'image',
-            'livetv'
-        );
-
-        return (array) $item;
-    })
-    ->values()
-    ->toArray();
-
-        
-        //$channelList = LiveTvChannelResource::collection($channel);
-             $html = '';
-           //   $perPage = $request->input('per_page', 12);
-           // $channel =$channelData->paginate($perPage);
-            foreach ($channelList as $index => $value) {
-                $html .= view('frontend::components.card.card_tvchannel', [
-                    'value' => $value,
-                ])->render();
-            }
-          ///  $hasMore =  $channel->hasMorePages();
-
-            return response()->json([
-                'status' => true,
-                'html' => $html,
-                'message' => __('movie.search_list'),
-                'hasMore' => '',
-            ], 200);
-       
-
-        
-        
-        
-         
-         ///print_r($data_channels);
-         
-         
-         
+        return response()->json([
+            'status' => true,
+            'html' => $html,
+            'message' => __('movie.search_list'),
+            'hasMore' => '',
+        ], 200);
      }     
 
 

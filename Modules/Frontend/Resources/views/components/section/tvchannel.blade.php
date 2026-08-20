@@ -28,11 +28,57 @@
 }
 
 .live-dot {
+    display: inline-block;
     width: 10px;
     height: 10px;
     background: #f2b400;
     border-radius: 50%;
     box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+    animation: live-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes live-dot-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+    }
+    50% {
+        opacity: 0.35;
+        transform: scale(1.2);
+        box-shadow: 0 0 14px rgba(255, 215, 0, 1);
+    }
+}
+
+.next-live-badge {
+    animation: next-live-pulse 1.6s ease-in-out infinite;
+}
+
+.next-live-dot {
+    display: inline-block;
+    animation: next-live-dot-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes next-live-pulse {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.55);
+    }
+    50% {
+        opacity: 0.92;
+        box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+    }
+}
+
+@keyframes next-live-dot-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.55;
+        transform: scale(1.15);
+    }
 }
 </style>
 
@@ -66,29 +112,26 @@
             
             
             <?php
-            
-            
-            //print_r($data);
-            
-      
-              $streamData = DB::table('live_tv_stream_content_mapping')
-            ->where('tv_channel_id', $data['id'])
-            ->first();
-            
-            
-           // echo "====================".$data['id'];
-            //print_r(  $streamData);
-            //echo "*******************************<br>";
-           
+            date_default_timezone_set('America/Los_Angeles');
+
+            // Use mapping data from the sorted homepage query
+            $streamData = (object) [
+                'upcoming_date' => $data['upcoming_date'] ?? null,
+                'upcoming_end_date' => $data['upcoming_end_date'] ?? null,
+                'recurring_program' => $data['recurring_program'] ?? null,
+                'server_url' => $data['server_url'] ?? null,
+                'embedded' => $data['embedded'] ?? null,
+            ];
+            $sortOrder = isset($data['sort_order']) ? (int) $data['sort_order'] : null;
+
             $upcoming_date = $streamData->upcoming_date ?? '';
-           
-            if(!empty($streamData->server_url))
-            {
+
+            if (!empty($streamData->server_url)) {
                 $playlist = @file_get_contents($streamData->server_url);
-            }
-            else
-            {
+            } elseif (!empty($streamData->embedded)) {
                 $playlist = @file_get_contents($streamData->embedded);
+            } else {
+                $playlist = false;
             }
             
             
@@ -175,49 +218,36 @@
 
 
 if (!empty($streamData->recurring_program)) {
+    $day = date('l', strtotime($streamData->upcoming_date));
+    if ($sortOrder === 0) {
+        ?>
 
-    $currentDateTime = date('Y-m-d H:i:s');
+      <span class="live-now-btn position-absolute top-0 end-0 m-2">
+        <span class="live-dot"></span>
+        LIVE NOW
+        </span>
+        <?php
+    } elseif ($sortOrder === 1) {
+        
+        ?>
 
-    // Current day + time
-    $currentDay  = date('l');
-    $currentTime = date('H:i:s');
+      <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">
+    🟡 <strong>NEXT LIVE</strong><br>
+    {{ $day }} • {{ \Carbon\Carbon::parse($streamData->upcoming_date)->format('h:i A') }} PT
+</span>
 
-    // Start day + time
-    $startDay  = date('l', strtotime($streamData->upcoming_date));
-    $startTime = date('H:i:s', strtotime($streamData->upcoming_date));
+        <?php
+    } else {
+        ?>
 
-    // End day + time
-    $endDay  = date('l', strtotime($streamData->upcoming_end_date));
-    $endTime = date('H:i:s', strtotime($streamData->upcoming_end_date));
+    <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">
+        🟡 <strong>NEXT LIVE</strong><br>
+        {{ $day }} • {{ \Carbon\Carbon::parse($streamData->upcoming_date)->format('h:i A') }} PT
+    </span>
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Convert day + time to a comparable timestamp
-    |--------------------------------------------------------------------------
-    */
-
-    $weekDays = [
-        'Sunday'    => 0,
-        'Monday'    => 1,
-        'Tuesday'   => 2,
-        'Wednesday' => 3,
-        'Thursday'  => 4,
-        'Friday'    => 5,
-        'Saturday'  => 6,
-    ];
-
-    $current = strtotime(
-        '2026-01-04 ' . $currentTime
-    ) + ($weekDays[$currentDay] * 86400);
-
-    $startTime = strtotime(
-        '2026-01-04 ' . $startTime
-    ) + ($weekDays[$startDay] * 86400);
-
-    $endTime = strtotime(
-        '2026-01-04 ' . $endTime
-    ) + ($weekDays[$endDay] * 86400);
+        <?php
+    }
+}
 
 
     $live_flag = false;
@@ -238,23 +268,6 @@ if (!empty($streamData->recurring_program)) {
 
        $day = date('l', strtotime($streamData->upcoming_date));
         ?>
-
-      <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">
-    🟡 <strong>NEXT LIVE</strong><br>
-    {{ $day }} • {{ \Carbon\Carbon::parse($streamData->upcoming_date)->format('h:i A') }} PT
-</span>
-
-
-        <?php
-    }
-}
-
-
-
-
-
-
-
 
  ?>                   
                 

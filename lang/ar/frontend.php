@@ -56,6 +56,7 @@ return [
     'movies' => 'الأفلام',
     'movie' => 'فيلم',
     'tvshows' => 'العروض التلفزيونية',
+    'embeded_tvshows' => 'الحلقات',
     'tvshow' => 'عرض تلفزيوني',
     'watch_now' => 'شاهد الآن',
     'rate_this' => 'قيم هذا',
