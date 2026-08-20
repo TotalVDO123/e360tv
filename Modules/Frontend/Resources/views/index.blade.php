@@ -1,4 +1,3 @@
-
 @extends('frontend::layouts.master')
 
 
@@ -112,6 +111,8 @@ body{
 
 
 
+/*
+=======
 
 /* $currentDateTime = date('Y-m-d H:i:s');
 $today = date('Y-m-d');
@@ -184,6 +185,15 @@ $data_channels = $liveQuery
         return (array) $item;
     })
     ->toArray(); */
+    */ 
+    
+    
+  
+  date_default_timezone_set('America/Los_Angeles');
+
+$currentDateTime = date('Y-m-d H:i:s');
+$today = date('l');              // Monday, Tuesday, etc.
+$currentTime = date('H:i:s');    // Current time only
 
     date_default_timezone_set('America/Los_Angeles');
 
