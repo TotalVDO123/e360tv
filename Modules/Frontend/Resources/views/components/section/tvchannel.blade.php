@@ -250,11 +250,24 @@ if (!empty($streamData->recurring_program)) {
 }
 
 
+    $live_flag = false;
 
+    // Live now
+    if ($current >= $startTime && $current <= $endTime) {
 
+        $live_flag = true;
+        ?>
 
+      <span class="live-now-btn position-absolute top-0 end-0 m-2">
+        <span class="live-dot"></span>
+        LIVE NOW
+        </span>
+        <?php
 
+    } else {
 
+       $day = date('l', strtotime($streamData->upcoming_date));
+        ?>
 
  ?>                   
                 

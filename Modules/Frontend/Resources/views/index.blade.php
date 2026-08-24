@@ -60,7 +60,7 @@ date_default_timezone_set('America/Los_Angeles');
 
 $currentDateTime = date('Y-m-d H:i:s');
 $today           = date('Y-m-d');
-$currentDay      = date('l');   // e.g. Tuesday
+$currentDay      = date('l');
 $currentTime     = date('H:i:s');
 
 $weekDays        = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -159,9 +159,6 @@ $data_channels = $data_channels
     ->take(18)
     ->values()
     ->toArray();
-      
-      
-   
 ?>
 
      @if (isenablemodule('livetv') == 1)
