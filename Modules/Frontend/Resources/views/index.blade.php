@@ -56,141 +56,15 @@ body{
 
 <?php 
 
-
-/* 
-       date_default_timezone_set('America/Los_Angeles');
-        $currentDateTime = date('Y-m-d H:i:s');
-     // echo "================".now();
-      
-   
-     $start = date('Y-m-d') . ' 00:00:00';
-    $end   = date('Y-m-d') . ' 23:59:59'; */
-      
-    
-      
-      
-  /*   
-  $data_channels = DB::table('live_tv_channel as c')
-    ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
-    ->select('c.*', 'm.upcoming_date', 'm.recurring_program')
-    ->where('c.status', 1)
-    ->whereDate('m.upcoming_date', '>=', $currentDateTime)
-    ->orderByDesc('m.recurring_program')
-    ->orderBy('m.upcoming_date', 'ASC')
-    ->limit(8)
-    ->get()
-    ->map(function ($item) {
-        return (array) $item;
-    })
-    ->toArray();
-    */
-    
-    
-    /*
-    $data_channels = DB::table('live_tv_channel as c')
-    ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
-    ->select('c.*', 'm.upcoming_date', 'm.recurring_program')
-    ->where('c.status', 1)
-    ->whereBetween('m.upcoming_date', [$start, $end])
-    ->orderByDesc('m.recurring_program')
-    ->orderBy('m.upcoming_date', 'ASC')
-    ->limit(8)
-    ->get()
-    ->map(function ($item) {
-        return (array) $item;
-    })
-    ->toArray();
-    */
-    
-    
-    
-    
-   //$currentDateTime = now();
-   
-//echo "=============".   date('l');
-///exit;
-
-
-
-
-/* $currentDateTime = date('Y-m-d H:i:s');
-$today = date('Y-m-d');
-
-
-
-
-
-$today = date('l');
-$currentTime = date('H:i:s');
-
-
-$liveQuery = DB::table('live_tv_channel as c')
-    ->join(
-        'live_tv_stream_content_mapping as m',
-        'c.id',
-        '=',
-        'm.tv_channel_id'
-    )
-    ->select(
-        'c.*',
-        'm.upcoming_date',
-        'm.upcoming_end_date',
-        'm.recurring_program',
-        DB::raw('0 as sort_order')
-    )
-    ->where('c.status', 1)
-
-    // Check today's DAY only
-    ->whereRaw("DAYNAME(m.upcoming_date) = ?", [$today])
-
-    // Check TIME only
-    ->whereRaw("TIME(m.upcoming_date) <= ?", [$currentTime])
-    ->whereRaw("TIME(m.upcoming_end_date) >= ?", [$currentTime]);
-
-
-$otherQuery = DB::table('live_tv_channel as c')
-    ->join(
-        'live_tv_stream_content_mapping as m',
-        'c.id',
-        '=',
-        'm.tv_channel_id'
-    )
-    ->select(
-        'c.*',
-        'm.upcoming_date',
-        'm.upcoming_end_date',
-        'm.recurring_program',
-        DB::raw('1 as sort_order')
-    )
-    ->where('c.status', 1)
-
-    // Check today's DAY only
-    ->whereRaw("DAYNAME(m.upcoming_date) >= ?", [$today])
-
-    // Not currently LIVE
-    ->where(function ($q) use ($currentTime) {
-        $q->whereRaw("TIME(m.upcoming_date) > ?", [$currentTime])
-          ->orWhereRaw("TIME(m.upcoming_end_date) < ?", [$currentTime]);
-    });
-
-
-$data_channels = $liveQuery
-    ->unionAll($otherQuery)
-    ->orderBy('sort_order', 'ASC')
-    ->orderBy('upcoming_date', 'ASC')
-    ->limit(18)
-    ->get()
-    ->map(function ($item) {
-        return (array) $item;
-    })
-    ->toArray(); */
-
-    date_default_timezone_set('America/Los_Angeles');
+date_default_timezone_set('America/Los_Angeles');
 
 $currentDateTime = date('Y-m-d H:i:s');
 $today           = date('Y-m-d');
 $currentDay      = date('l');   // e.g. Tuesday
 $currentTime     = date('H:i:s');
+
+$weekDays        = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+$currentDayIndex = array_search($currentDay, $weekDays, true);
 
 $rows = DB::table('live_tv_channel as c')
     ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
@@ -198,55 +72,93 @@ $rows = DB::table('live_tv_channel as c')
     ->where('c.status', 1)
     ->whereNull('c.deleted_at')
     ->whereNull('m.deleted_at')
-    ->where(function ($q) use ($today, $currentDay) {
-        // One-time: scheduled for today
-        $q->where(function ($q2) use ($today) {
+    ->where(function ($q) use ($currentDateTime) {
+        $q->where(function ($q2) use ($currentDateTime) {
             $q2->where('m.recurring_program', 0)
-               ->whereDate('m.upcoming_date', $today);
-        })
-        // Recurring: matches today's weekday
-        ->orWhere(function ($q2) use ($currentDay) {
-            $q2->where('m.recurring_program', 1)
-               ->whereRaw('DAYNAME(m.upcoming_date) = ?', [$currentDay]);
-        });
+               ->where('m.upcoming_end_date', '>=', $currentDateTime);
+        })->orWhere('m.recurring_program', 1);
     })
     ->get();
 
-    $data_channels = $rows->map(function ($item) use ($currentDateTime, $currentTime, $today) {
+$classified = $rows->map(function ($item) use ($currentDateTime, $currentTime, $today, $weekDays, $currentDayIndex) {
     $item = (array) $item;
 
     if ($item['recurring_program'] == 1) {
-        $startTime = date('H:i:s', strtotime($item['upcoming_date']));
-        $endTime   = date('H:i:s', strtotime($item['upcoming_end_date']));
+        $showDay      = date('l', strtotime($item['upcoming_date']));
+        $startTime    = date('H:i:s', strtotime($item['upcoming_date']));
+        $endTime      = date('H:i:s', strtotime($item['upcoming_end_date']));
+        $showDayIndex = array_search($showDay, $weekDays, true);
+        $dayRank      = ($showDayIndex - $currentDayIndex + 7) % 7;
 
-        if ($startTime <= $currentTime && $endTime >= $currentTime) {
-            $item['sort_order'] = 0; // live now
-        } elseif ($startTime > $currentTime) {
-            $item['sort_order'] = 1; // upcoming
+        if ($dayRank === 0) {
+            if ($startTime <= $currentTime && $endTime >= $currentTime) {
+                $item['sort_order'] = 0; // live now
+            } elseif ($startTime > $currentTime) {
+                $item['sort_order'] = 1; // next live today
+            } else {
+                $item['sort_order'] = 2; // already ended today
+            }
         } else {
-            $item['sort_order'] = 2; // past (e.g. 08:00-08:30 at 14:39)
+            $item['sort_order'] = 1; // next live on a later day
         }
-        $item['sort_upcoming'] = $today . ' ' . $startTime;
+
+        $item['day_rank']      = $dayRank;
+        $item['sort_upcoming'] = date('Y-m-d', strtotime($today . ' +' . $dayRank . ' days')) . ' ' . $startTime;
     } else {
-        if ($item['upcoming_date'] <= $currentDateTime && $item['upcoming_end_date'] >= $currentDateTime) {
-            $item['sort_order'] = 0;
-        } elseif ($item['upcoming_date'] > $currentDateTime) {
+        $upcomingDate = date('Y-m-d', strtotime($item['upcoming_date']));
+        $dayDiff      = (int) floor((strtotime($upcomingDate) - strtotime($today)) / 86400);
+
+        if ($dayDiff === 0) {
+            if ($item['upcoming_date'] <= $currentDateTime && $item['upcoming_end_date'] >= $currentDateTime) {
+                $item['sort_order'] = 0;
+            } elseif ($item['upcoming_date'] > $currentDateTime) {
+                $item['sort_order'] = 1;
+            } else {
+                $item['sort_order'] = 2;
+            }
+            $item['day_rank'] = 0;
+        } elseif ($dayDiff > 0) {
             $item['sort_order'] = 1;
+            $item['day_rank']   = $dayDiff;
         } else {
             $item['sort_order'] = 2;
+            $item['day_rank']   = 999;
         }
+
         $item['sort_upcoming'] = $item['upcoming_date'];
     }
 
     return $item;
-})
-->sortBy([
-    ['sort_order', 'asc'],
-    ['sort_upcoming', 'asc'],
-])
-->take(18)
-->values()
-->toArray();
+});
+
+$liveAndNext = $classified->filter(function ($item) {
+    return in_array($item['sort_order'], [0, 1], true);
+});
+
+$todayLiveAndNext = $liveAndNext->filter(function ($item) {
+    return (int) $item['day_rank'] === 0;
+});
+
+if ($todayLiveAndNext->isNotEmpty()) {
+    $data_channels = $todayLiveAndNext;
+} else {
+    $nextDayRank = $liveAndNext->min('day_rank');
+
+    $data_channels = $nextDayRank !== null
+        ? $liveAndNext->filter(function ($item) use ($nextDayRank) {
+            return (int) $item['day_rank'] === (int) $nextDayRank;
+        })
+        : collect();
+}
+
+$data_channels = $data_channels
+    ->sortBy([
+        ['sort_order', 'asc'],
+        ['sort_upcoming', 'asc'],
+    ])
+    ->take(18)
+    ->values()
+    ->toArray();
       
       
    
