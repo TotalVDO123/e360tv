@@ -8,6 +8,11 @@ use Modules\Entertainment\Models\Entertainment;
 
 class CommonContentResourceV3 extends JsonResource
 {
+    protected static function newCollection($resource)
+    {
+        return new CommonContentResourceV3Collection($resource);
+    }
+
     public function toArray($request)
     {
 
@@ -23,9 +28,12 @@ class CommonContentResourceV3 extends JsonResource
 
         $userId = $request->input('user_id') ?? auth()->id();
         $user = auth()->user();
+        $skipFlags = (bool) $request->attributes->get('skip_user_content_flags');
         $isInWatchList = false;
 
-        if ($userId) {
+        if ($this->hasPreloadedFlag('is_watch_list')) {
+            $isInWatchList = (bool) $this->is_watch_list;
+        } elseif (!$skipFlags && $userId) {
             $profile_id = $request->input('profile_id') ?: getCurrentProfile($userId, $request);
             $contentType = $this->type ?? 'movie';
             $isInWatchList = Watchlist::where('entertainment_id', $this->id)
@@ -33,8 +41,6 @@ class CommonContentResourceV3 extends JsonResource
                 ->where('type', $contentType)
                 ->where('profile_id', $profile_id)
                 ->exists();
-        } elseif (isset($this->is_watch_list)) {
-            $isInWatchList = $this->is_watch_list;
         }
 
         // Premium badge logic
@@ -46,9 +52,15 @@ class CommonContentResourceV3 extends JsonResource
         $isPaid       = $movieAccess === 'paid';
         $showPremiumBadge = !$isPayPerView && $isPaid && $videoPlanLevel > $userPlanLevel;
 
-        $isPurchased = $isPayPerView
-            ? Entertainment::isPurchased($this->id, $this->type)
-            : false;
+        if ($this->hasPreloadedFlag('is_purchased')) {
+            $isPurchased = (bool) $this->is_purchased;
+        } elseif ($skipFlags) {
+            $isPurchased = false;
+        } else {
+            $isPurchased = $isPayPerView
+                ? Entertainment::isPurchased($this->id, $this->type)
+                : false;
+        }
 
         if ($this->trailer_url_type == 'Local' && !empty($this->bunny_video_url && env('ACTIVE_STORAGE') == 'bunny')) {
             $this->trailer_url_type = 'HLS';
@@ -86,5 +98,20 @@ class CommonContentResourceV3 extends JsonResource
             'is_pay_per_view' => $isPayPerView,
             'is_paid'         => $isPaid,
         ];
+    }
+
+    protected function hasPreloadedFlag(string $key): bool
+    {
+        $model = $this->resource;
+
+        if ($model instanceof \Illuminate\Database\Eloquent\Model) {
+            return array_key_exists($key, $model->getAttributes());
+        }
+
+        if (is_array($model)) {
+            return array_key_exists($key, $model);
+        }
+
+        return false;
     }
 }

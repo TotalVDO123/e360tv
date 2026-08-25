@@ -1,7 +1,8 @@
 <div class="iq-card card-hover entainment-slick-card hover-card-container" data-movie-id="{{ $value['id'] }}"
-    data-movie-data="{{ json_encode($value) }}" onmouseenter="openHoverModal(this)" onmouseleave="closeHoverModal(this)">
+    data-movie-type="{{ $value['type'] ?? (isset($value['season_id']) ? 'episode' : 'season') }}"
+    data-movie-data="{{ json_encode(slimCardMovieData($value)) }}" onmouseenter="openHoverModal(this)" onmouseleave="closeHoverModal(this)">
 
-    <div class="block-images position-relative w-100" data-trailer-url="{{ $value['trailer_url'] ?? '' }}"
+    <div class="block-images position-relative w-100"
         data-trailer-type="{{ $value['trailer_url_type'] ?? '' }}">
 
         @if (isset($is_search) && $is_search == 1)

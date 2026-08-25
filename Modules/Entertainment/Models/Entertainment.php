@@ -1029,13 +1029,79 @@ public static function get_movie($movieId, $user_id, $profile_id, $device_id)
 
     public static function isPurchased($movieId,$type=null, $userId = null)
     {
+        if (request()->attributes->get('skip_user_content_flags')) {
+            return false;
+        }
+
         $userId = $userId ?? auth()->id();
 
         if (!$userId || !$movieId) return false;
 
-        return PayPerView::where('user_id', $userId)
+        $memoKey = $userId.'|'.$movieId.'|'.$type;
+        static $memo = [];
+        if (array_key_exists($memoKey, $memo)) {
+            return $memo[$memoKey];
+        }
+
+        $memo[$memoKey] = self::purchaseQuery($userId)
             ->where('movie_id', $movieId)
             ->where('type', $type)
+            ->exists();
+
+        return $memo[$memoKey];
+    }
+
+    /**
+     * Batch PPV purchase flags. Returns map keyed by "{type}:{id}".
+     */
+    public static function arePurchased(array $pairs, $userId = null): array
+    {
+        $result = [];
+        foreach ($pairs as $pair) {
+            $id = $pair['id'] ?? null;
+            $type = $pair['type'] ?? null;
+            if ($id) {
+                $result[$type.':'.$id] = false;
+            }
+        }
+
+        if (request()->attributes->get('skip_user_content_flags') || $result === []) {
+            return $result;
+        }
+
+        $userId = $userId ?? auth()->id();
+        if (!$userId) {
+            return $result;
+        }
+
+        $ids = [];
+        $types = [];
+        foreach ($pairs as $pair) {
+            if (!empty($pair['id'])) {
+                $ids[] = $pair['id'];
+                if (isset($pair['type'])) {
+                    $types[] = $pair['type'];
+                }
+            }
+        }
+
+        $rows = self::purchaseQuery($userId)
+            ->whereIn('movie_id', array_values(array_unique($ids)))
+            ->when($types !== [], function ($q) use ($types) {
+                $q->whereIn('type', array_values(array_unique($types)));
+            })
+            ->get(['movie_id', 'type']);
+
+        foreach ($rows as $row) {
+            $result[$row->type.':'.$row->movie_id] = true;
+        }
+
+        return $result;
+    }
+
+    protected static function purchaseQuery($userId)
+    {
+        return PayPerView::where('user_id', $userId)
             ->where(function ($query) {
                 $query->whereNull('view_expiry_date')
                     ->orWhere('view_expiry_date', '>', now());
@@ -1043,8 +1109,7 @@ public static function get_movie($movieId, $user_id, $profile_id, $device_id)
             ->where(function ($query) {
                 $query->whereNull('first_play_date')
                     ->orWhereRaw('DATE_ADD(first_play_date, INTERVAL available_for DAY) > ?', [now()]);
-            })
-            ->exists();
+            });
     }
 
     /**

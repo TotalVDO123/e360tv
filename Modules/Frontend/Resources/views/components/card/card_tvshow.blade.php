@@ -1,14 +1,21 @@
 @foreach ($values as $value)
+    @php
+        $omitMovieData = !empty($omit_movie_data);
+        $cardType = $value['type'] ?? 'tvshow';
+    @endphp
     <div class="slick-item">
        
         
         
         <div class="iq-card card-hover entainment-slick-card hover-card-container" data-movie-id="{{ $value['id'] }}"
-            data-movie-data="{{ json_encode($value) }}" data-trailer-url="{{ $value['trailer_url'] ?? '' }}"
+            data-movie-type="{{ $cardType }}"
+            @unless ($omitMovieData)
+                data-movie-data="{{ json_encode(slimCardMovieData($value)) }}"
+            @endunless
             data-trailer-type="{{ $value['trailer_url_type'] ?? '' }}" onmouseenter="openHoverModal(this)"
             onmouseleave="closeHoverModal(this)" data-is-search="{{ isset($is_search) && $is_search == 1 ? 1 : null }}">
 
-            <div class="block-images position-relative w-100" data-trailer-url="{{ $value['trailer_url'] ?? '' }}"
+            <div class="block-images position-relative w-100"
                 data-trailer-type="{{ $value['trailer_url_type'] ?? '' }}">
                 @php
                     $isComingSoon =

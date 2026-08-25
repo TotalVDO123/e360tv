@@ -49,7 +49,8 @@ use Carbon\Carbon;
 
 
 
-use Auth;
+use Modules\Frontend\Services\HomePageDataService;
+use Illuminate\Support\Facades\Auth;
 
 
 class FrontendController extends Controller
@@ -64,7 +65,7 @@ class FrontendController extends Controller
         $this->recommendationService = $recommendationService;
     }
 
-    public function index(Request $request)
+    public function index(Request $request, HomePageDataService $homePageData)
     {
 
        
@@ -84,19 +85,13 @@ class FrontendController extends Controller
 
     
      ////////////////////////////////////////////////////////////
-         $user_id = auth()->id();
-        $profile_id = $request->profile_id ?? getCurrentProfile($user_id, $request);
-        $device_type = getDeviceType($request);
+        $user_id = auth()->id();
 
-        // Create cache key based on request parameters
-        $cacheKey = 'dashboard_detail_data_v3_'. md5(json_encode([
-            'user_id' => $user_id,
-            'profile_id' => $profile_id,
-            'device_type' => $device_type,
-            'timestamp' => now()->format('Y-m-d-H')
-        ]));
+        // Slim homepage only. dashboard_detail_data_v3 (top 10, latest/popular,
+        // PPV, ads, recommendations, dynamic_data, …) is not queried while those
+        // Blade sections stay commented. The block below is the previous full
+        // builder — do not uncomment it unless index.blade.php renders those rows.
 
-        
         /*
         
         // Use Redis cache with 5 minutes TTL
@@ -555,18 +550,59 @@ class FrontendController extends Controller
         });
 
         */
-        /////////////////////////////////////////////////
-        
-        $seriesNetworks = DB::table('series_networks')
-        ->select('id', 'order', 'parent_id', 'name', 'image', 'banner_image', 'slug')
-         ->where('network_list_active', 1)
-        ->orderBy('order', 'ASC')
-        ->get();
 
-        
-        $cachedResult=[];
+        $cachedResult = [
+            'sliders' => MobileSetting::getCacheValueBySlug('banner') == 1
+                ? $this->getSlimHomeSliders($request, $user_id)
+                : [],
+        ];
 
-        return view('frontend::index', compact('user_id', 'cachedResult','seriesNetworks'));
+        $seriesNetworks = Cache::remember('home_series_networks', 300, function () {
+            return DB::table('series_networks')
+                ->select('id', 'order', 'parent_id', 'name', 'image', 'banner_image', 'slug')
+                ->where('network_list_active', 1)
+                ->orderBy('order', 'ASC')
+                ->get();
+        });
+
+        $data_channels = isenablemodule('livetv') == 1
+            ? $homePageData->getLiveStreamChannels()
+            : [];
+
+        $networkChannelData = $homePageData->getNetworkChannelDataMap($seriesNetworks, 1);
+
+        return view('frontend::index', compact(
+            'user_id',
+            'cachedResult',
+            'seriesNetworks',
+            'data_channels',
+            'networkChannelData'
+        ));
+    }
+
+    /**
+     * Banners + first-paint homepage data. Shared cache keys (no user_id) so a
+     * miss is paid once, not per logged-in user.
+     */
+    protected function getSlimHomeSliders(Request $request, $user_id)
+    {
+        $sliderList = Cache::remember('home_banners', 300, function () {
+            return Banner::where('banner_for', 'home')
+                ->where('status', 1)
+                ->orderBy('id', 'asc')
+                ->whereNull('deleted_at')
+                ->get();
+        });
+
+        $request->attributes->set('skip_user_content_flags', true);
+
+        try {
+            return SliderResourceV3::collection($sliderList)
+                ->additional(['user_id' => $user_id])
+                ->toArray($request);
+        } finally {
+            $request->attributes->remove('skip_user_content_flags');
+        }
     }
 
 

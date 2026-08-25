@@ -1,7 +1,8 @@
 @foreach ($values as $data)
     <div class="slick-item">
         <div class="iq-card card-hover entainment-slick-card hover-card-container" data-movie-id="{{ $data['id'] }}"
-            data-movie-data="{{ json_encode($data) }}" onmouseenter="openHoverModal(this)"
+            data-movie-type="{{ $data['type'] ?? 'video' }}"
+            data-movie-data="{{ json_encode(slimCardMovieData($data)) }}" onmouseenter="openHoverModal(this)"
             data-is-search="{{ isset($is_search) && $is_search == 1 ? 1 : null }}" onmouseleave="closeHoverModal(this)">
             <div class="block-images position-relative w-100">
 
@@ -16,7 +17,7 @@
                 @endif
 
                 <div class="image-box w-100">
-                    <img src="{{ $data['poster_image'] }}" alt="movie-card"
+                    <img src="{{ $data['poster_image'] }}" alt="movie-card" loading="lazy" width="230" height="390"
                         class="img-fluid object-cover w-100 d-block border-0">
                     @if (!empty($data['is_pay_per_view']))
                         @if (!empty($data['is_purchased']))

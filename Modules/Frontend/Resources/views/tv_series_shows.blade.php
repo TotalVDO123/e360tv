@@ -26,6 +26,7 @@
             <div id="more-infinity-section">
                 @include('frontend::components.section.tv_series_shows_network', [
                     'moreinfinity' => $seriesNetworks,
+                    'networkChannelData' => $networkChannelData ?? [],
                 ])
             </div>
         </div>

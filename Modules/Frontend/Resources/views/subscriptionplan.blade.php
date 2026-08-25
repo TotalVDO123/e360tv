@@ -1,5 +1,9 @@
 @extends('frontend::layouts.master')
 
+@pushOnce('phosphor-extra')
+    <link rel="stylesheet" href="{{ asset('phosphor-icons/bold/style.css') }}">
+@endPushOnce
+
 @section('title')
     {{ __('frontend.subscription_plan') }}
 @endsection

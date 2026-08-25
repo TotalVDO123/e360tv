@@ -21,7 +21,10 @@ class VideoResourceV3 extends JsonResource
             $plans = Plan::where('level', '<=', $plan->level)->get();
         }
         $userId = auth()->id();
-        if ($userId) {
+        $skipFlags = (bool) $request->attributes->get('skip_user_content_flags');
+        if ($skipFlags) {
+            $isInWatchList = false;
+        } elseif ($userId) {
             $profile_id = $request->input('profile_id') ?: getCurrentProfile($userId, $request);
             $isInWatchList = WatchList::where('entertainment_id', $this->id)
                 ->where('user_id', $userId)
@@ -53,7 +56,7 @@ class VideoResourceV3 extends JsonResource
             'plan_level' => $videoPlanLevel,
             'is_premium' => $isPremium,
             'show_premium_badge' => $showPremiumBadge,
-            'is_purchased' => Entertainment::isPurchased($this->id, 'video', $userId),
+            'is_purchased' => $skipFlags ? false : Entertainment::isPurchased($this->id, 'video', $userId),
             'is_pay_per_view' => $this->access === 'pay-per-view',
             'imdb_rating' => $this->IMDb_rating,
             'duration' => $this->duration,

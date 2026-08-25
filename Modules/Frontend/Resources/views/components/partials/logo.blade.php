@@ -7,6 +7,6 @@
         @endphp
 
 
-        <img class="img-fluid logo" src="{{ $logo }}" alt="streamit">
+        <img class="img-fluid logo" src="{{ $logo }}" alt="streamit" width="180" height="48">
     </a>
 </div>

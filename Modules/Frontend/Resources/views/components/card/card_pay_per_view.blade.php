@@ -1,5 +1,6 @@
 <div class="iq-card card-hover entainment-slick-card hover-card-container" data-movie-id="{{ $value['id'] }}"
-    data-movie-data="{{ json_encode($value) }}" onmouseenter="openHoverModal(this)" onmouseleave="closeHoverModal(this)">
+    data-movie-type="{{ $value['type'] ?? (isset($value['season_id']) ? 'episode' : 'tvshow') }}"
+    data-movie-data="{{ json_encode(slimCardMovieData($value)) }}" onmouseenter="openHoverModal(this)" onmouseleave="closeHoverModal(this)">
     <div class="block-images position-relative1">
 
         @if (isset($is_search) && $is_search == 1)

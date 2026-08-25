@@ -18,8 +18,10 @@
 
 
     <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;1,100;1,300&amp;display=swap"
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
         rel="stylesheet">
 
     <link rel="stylesheet" href="{{ asset('modules/frontend/style.css') }}">
@@ -27,7 +29,6 @@
     <link rel="stylesheet" href="{{ asset('iconly/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('phosphor-icons/regular/style.css') }}">
     <link rel="stylesheet" href="{{ asset('phosphor-icons/fill/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('phosphor-icons/bold/style.css') }}">
     <link rel="icon" type="image/png" href="{{ GetSettingValue('favicon') ? setBaseUrlWithFileName(GetSettingValue('favicon'),'image','logos') :asset('img/logo/favicon.png') }}">
     <link rel="apple-touch-icon" sizes="76x76"
         href="{{ GetSettingValue('favicon') ? setBaseUrlWithFileName(GetSettingValue('favicon'),'image','logos') : asset('img/logo/favicon.png') }}">

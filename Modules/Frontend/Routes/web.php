@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Modules\Frontend\Http\Controllers\Auth\UserController;
 use Modules\Frontend\Http\Controllers\PerviewPaymentController;
+use Modules\Frontend\Http\Controllers\API\HoverContentController;
+use Modules\Frontend\Http\Controllers\API\HomeSectionController;
 use Modules\Entertainment\Http\Controllers\Backend\EntertainmentsController;
 use Modules\NotificationTemplate\Http\Controllers\Backend\NotificationTemplatesController;
 
@@ -129,6 +131,12 @@ Route::get('/topchannel-list', [FrontendController::class, 'topChannelList'])->n
 Route::get('/genres-list', [FrontendController::class, 'genresList'])->name('genresList');
 Route::get('/languages-data',[FrontendController::class, 'languageData'])->name(name: 'languageData');
 Route::get('/search', [FrontendController::class, 'searchList'])->name('search');
+Route::get('/api/frontend/hover/{type}/{id}', [HoverContentController::class, 'show'])
+    ->where('type', 'movie|tvshow|video|episode|season')
+    ->name('frontend.hover');
+Route::get('/api/frontend/home/network/{id}', [HomeSectionController::class, 'network'])
+    ->whereNumber('id')
+    ->name('frontend.home.network');
 
 
 

@@ -220,118 +220,156 @@ class LiveTVsController extends Controller
         
      public function channelListSequence(Request $request)
      {
-        date_default_timezone_set('America/Los_Angeles');
 
-        $currentDateTime = date('Y-m-d H:i:s');
-        $today           = date('Y-m-d');
-        $currentDay      = date('l');
-        $currentTime     = date('H:i:s');
 
-        $weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        $currentDayIndex = array_search($currentDay, $weekDays, true);
+date_default_timezone_set('America/Los_Angeles');
+date_default_timezone_set('America/Los_Angeles');
 
-        $rows = DB::table('live_tv_channel as c')
-            ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
-            ->select(
-                'c.*',
-                'c.poster_url as poster_image',
-                'm.id as mapping_id',
-                'm.upcoming_date',
-                'm.upcoming_end_date',
-                'm.recurring_program'
-            )
-            ->where('c.status', 1)
-            ->when($request->filled('category_id'), function ($query) use ($request) {
-                $query->where('c.category_id', $request->category_id);
-            })
-            ->get();
+$currentDateTime = date('Y-m-d H:i:s');
+$today           = date('Y-m-d');
+$currentDay      = date('l');
+$currentTime     = date('H:i:s');
 
-        $channelList = $rows
-            ->map(function ($item) use ($currentDateTime, $currentTime, $today, $weekDays, $currentDayIndex) {
-                $item = (array) $item;
+$weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+$currentDayIndex = array_search($currentDay, $weekDays, true);
+$currentDayIndex = $currentDayIndex === false ? 0 : (int) $currentDayIndex;
 
-                if (!empty($item['recurring_program'])) {
-                    $showDay   = date('l', strtotime($item['upcoming_date']));
-                    $startTime = date('H:i:s', strtotime($item['upcoming_date']));
-                    $endTime   = date('H:i:s', strtotime($item['upcoming_end_date']));
-                    $showDayIndex = array_search($showDay, $weekDays, true);
-                    $dayRank = ($showDayIndex - $currentDayIndex + 7) % 7;
+$rows = DB::table('live_tv_channel as c')
+    ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
+    ->select(
+        'c.*',
+        'c.poster_url as poster_image',
+        'm.id as mapping_id',
+        'm.upcoming_date',
+        'm.upcoming_end_date',
+        'm.recurring_program'
+    )
+    ->where('c.status', 1)
+    ->whereNull('c.deleted_at')
+    ->whereNull('m.deleted_at')
+    ->when($request->filled('category_id') && ctype_digit((string) $request->category_id), function ($query) use ($request) {
+        $query->where('c.category_id', (int) $request->category_id);
+    })
+    ->get();
 
-                    if ($dayRank === 0) {
-                        if ($startTime <= $currentTime && $endTime >= $currentTime) {
-                            $item['sort_order'] = 0;
-                        } elseif ($startTime > $currentTime) {
-                            $item['sort_order'] = 1;
-                        } else {
-                            $item['sort_order'] = 2;
-                            $dayRank = 7;
-                        }
-                    } else {
-                        $item['sort_order'] = 1;
-                    }
+$channelList = $rows
+    ->map(function ($item) use ($currentDateTime, $currentTime, $today, $weekDays, $currentDayIndex) {
+        $item = (array) $item;
 
-                    $item['day_rank'] = $dayRank;
-                    $item['sort_upcoming'] = $dayRank === 7
-                        ? $today . ' ' . $startTime
-                        : date('Y-m-d', strtotime($today . ' +' . $dayRank . ' days')) . ' ' . $startTime;
-                } else {
-                    $upcomingDate = date('Y-m-d', strtotime($item['upcoming_date']));
-                    $dayDiff = (int) floor((strtotime($upcomingDate) - strtotime($today)) / 86400);
+        if (empty($item['upcoming_date'])) {
+            $item['sort_group']    = 3;
+            $item['day_rank']      = 99;
+            $item['sort_upcoming'] = '9999-12-31 23:59:59';
+            $item['poster_image']  = setBaseUrlWithFileName($item['poster_image'], 'image', 'livetv');
 
-                    if ($dayDiff === 0) {
-                        if ($item['upcoming_date'] <= $currentDateTime && $item['upcoming_end_date'] >= $currentDateTime) {
-                            $item['sort_order'] = 0;
-                            $item['day_rank'] = 0;
-                        } elseif ($item['upcoming_date'] > $currentDateTime) {
-                            $item['sort_order'] = 1;
-                            $item['day_rank'] = 0;
-                        } else {
-                            $item['sort_order'] = 2;
-                            $item['day_rank'] = 7;
-                        }
-                    } elseif ($dayDiff > 0 && $dayDiff <= 6) {
-                        $item['sort_order'] = 1;
-                        $item['day_rank'] = $dayDiff;
-                    } else {
-                        $item['sort_order'] = 2;
-                        $item['day_rank'] = 7;
-                    }
-
-                    $item['sort_upcoming'] = $item['upcoming_date'];
-                }
-
-                return $item;
-            })
-            ->sortBy([
-                ['day_rank', 'asc'],
-                ['sort_order', 'asc'],
-                ['sort_upcoming', 'asc'],
-            ])
-            ->values()
-            ->map(function ($item) {
-                $item['poster_image'] = setBaseUrlWithFileName(
-                    $item['poster_image'],
-                    'image',
-                    'livetv'
-                );
-
-                return $item;
-            })
-            ->toArray();
-
-        $html = '';
-        foreach ($channelList as $value) {
-            $html .= view('frontend::components.card.card_tvchannel', [
-                'value' => $value,
-            ])->render();
+            return $item;
         }
 
-        return response()->json([
-            'status' => true,
-            'html' => $html,
-            'message' => __('movie.search_list'),
-            'hasMore' => '',
-        ], 200);
+        $startTime = date('H:i:s', strtotime($item['upcoming_date']));
+        $endTime   = date('H:i:s', strtotime($item['upcoming_end_date'] ?: $item['upcoming_date']));
+
+        $isLiveNow = ($startTime <= $endTime)
+            ? ($startTime <= $currentTime && $endTime >= $currentTime)
+            : ($currentTime >= $startTime || $currentTime <= $endTime);
+
+        if (!empty($item['recurring_program'])) {
+            $showDay      = date('l', strtotime($item['upcoming_date']));
+            $showDayIndex = array_search($showDay, $weekDays, true);
+            if ($showDayIndex === false) {
+                $showDayIndex = $currentDayIndex;
+            }
+
+            $dayRank = ($showDayIndex - $currentDayIndex + 7) % 7;
+
+            if ($dayRank === 0) {
+                if ($isLiveNow) {
+                    $item['sort_group'] = 0;
+                    $item['day_rank']   = 0;
+                } elseif ($startTime > $currentTime) {
+                    $item['sort_group'] = 1;
+                    $item['day_rank']   = 0;
+                } else {
+                    $item['sort_group'] = 3;
+                    $item['day_rank']   = 7;
+                }
+            } else {
+                $item['sort_group'] = 2;
+                $item['day_rank']   = $dayRank;
+            }
+
+            $item['sort_upcoming'] = $item['day_rank'] === 7
+                ? $today . ' ' . $startTime
+                : date('Y-m-d', strtotime($today . ' +' . $item['day_rank'] . ' days')) . ' ' . $startTime;
+        } else {
+            $upcomingDate = date('Y-m-d', strtotime($item['upcoming_date']));
+            $dayDiff      = (int) floor((strtotime($upcomingDate) - strtotime($today)) / 86400);
+
+            if ($dayDiff === 0) {
+                if ($item['upcoming_date'] <= $currentDateTime && $item['upcoming_end_date'] >= $currentDateTime) {
+                    $item['sort_group'] = 0;
+                    $item['day_rank']   = 0;
+                } elseif ($item['upcoming_date'] > $currentDateTime) {
+                    $item['sort_group'] = 1;
+                    $item['day_rank']   = 0;
+                } else {
+                    $item['sort_group'] = 3;
+                    $item['day_rank']   = 7;
+                }
+            } elseif ($dayDiff > 0) {
+                $item['sort_group'] = 2;
+                $item['day_rank']   = $dayDiff;
+            } else {
+                $item['sort_group'] = 3;
+                $item['day_rank']   = 7;
+            }
+
+            $item['sort_upcoming'] = $item['upcoming_date'];
+        }
+
+        $item['poster_image'] = setBaseUrlWithFileName(
+            $item['poster_image'],
+            'image',
+            'livetv'
+        );
+
+        return $item;
+    })
+    ->sortBy([
+        ['sort_group', 'asc'],
+        ['day_rank', 'asc'],
+        ['sort_upcoming', 'asc'],
+    ])
+    ->values()
+    ->toArray();
+
+        
+        //$channelList = LiveTvChannelResource::collection($channel);
+             $html = '';
+           //   $perPage = $request->input('per_page', 12);
+           // $channel =$channelData->paginate($perPage);
+            foreach ($channelList as $index => $value) {
+                $html .= view('frontend::components.card.card_tvchannel', [
+                    'value' => $value,
+                ])->render();
+            }
+          ///  $hasMore =  $channel->hasMorePages();
+
+            return response()->json([
+                'status' => true,
+                'html' => $html,
+                'message' => __('movie.search_list'),
+                'hasMore' => '',
+            ], 200);
+       
+
+        
+        
+        
+         
+         ///print_r($data_channels);
+         
+         
+         
      }     
 
 
@@ -366,6 +404,12 @@ class LiveTVsController extends Controller
             }
             if ($request->has('is_ajax') && $request->is_ajax == 1) {
                 $channel =$channelData->paginate($perPage);
+                try {
+                    $page = max(1, (int) ($request->page ?? 1));
+                    $channel->setCollection(
+                        $this->sortLiveChannelsBySchedule((clone $channelData)->get())->forPage($page, $perPage)->values()
+                    );
+                } catch (\Throwable $e) {}
 
                 // Process channel data to add device support and plan level info
                 $channel->getCollection()->transform(function($channelItem) use ($device_type, $deviceTypeResponse, $userPlanId, $userId, $userPlanLevel) {
@@ -393,6 +437,16 @@ class LiveTVsController extends Controller
                 ];
             }else{
                 $channelData=  $channelData->paginate($perPage);
+                try {
+                    $page = max(1, (int) ($request->page ?? 1));
+                    $sortedQuery = LiveTvChannel::with('TvCategory','plan','TvChannelStreamContentMappings')->where('status',1)->where('deleted_at',null);
+                    if(!empty($request->category_id)){
+                        $sortedQuery = $sortedQuery->where('category_id',$request->category_id);
+                    }
+                    $channelData->setCollection(
+                        $this->sortLiveChannelsBySchedule($sortedQuery->get())->forPage($page, $perPage)->values()
+                    );
+                } catch (\Throwable $e) {}
                 // Process channel data to add device support and plan level info
                 $channelData->transform(function($channelItem) use ($device_type, $deviceTypeResponse, $userPlanId, $userId) {
                     $channelItem->isDeviceSupported = $deviceTypeResponse['isDeviceSupported'] == true ? 1 : 0;
@@ -539,5 +593,124 @@ class LiveTVsController extends Controller
             'data' => $cachedResult['data'],
             'message' => __('livetv.livetv_dashboard'),
         ], 200);
+    }
+
+    /**
+     * Order: live now, later today, later days, then ended shows last.
+     */
+    private function sortLiveChannelsBySchedule($channels)
+    {
+        date_default_timezone_set('America/Los_Angeles');
+
+        $currentDateTime = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
+        $currentDay = date('l');
+        $currentTime = date('H:i:s');
+        $weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        $currentDayIndex = array_search($currentDay, $weekDays, true);
+        if ($currentDayIndex === false) {
+            $currentDayIndex = 0;
+        }
+
+        return $channels->map(function ($channel) use ($currentDateTime, $currentTime, $today, $weekDays, $currentDayIndex) {
+            $mapping = $channel->TvChannelStreamContentMappings;
+            $upcomingDate = optional($mapping)->upcoming_date;
+            $upcomingEndDate = optional($mapping)->upcoming_end_date;
+            $recurring = optional($mapping)->recurring_program ?? 0;
+
+            if (empty($upcomingDate)) {
+                $channel->sort_order = 2;
+                $channel->day_rank = 999;
+                $channel->sort_upcoming = '9999-12-31 23:59:59';
+                return $channel;
+            }
+
+            if (!empty($recurring)) {
+                $showDay = date('l', strtotime($upcomingDate));
+                $startTime = date('H:i:s', strtotime($upcomingDate));
+                $endTime = $this->resolveShowEndTime($upcomingDate, $upcomingEndDate);
+                $showDayIndex = array_search($showDay, $weekDays, true);
+                if ($showDayIndex === false) {
+                    $showDayIndex = $currentDayIndex;
+                }
+                $dayRank = ($showDayIndex - $currentDayIndex + 7) % 7;
+
+                if ($dayRank === 0) {
+                    if ($startTime <= $currentTime && $endTime >= $currentTime) {
+                        $channel->sort_order = 0;
+                    } elseif ($startTime > $currentTime) {
+                        $channel->sort_order = 1;
+                    } else {
+                        $channel->sort_order = 2;
+                        $dayRank = 7;
+                    }
+                } else {
+                    $channel->sort_order = 1;
+                }
+
+                $channel->day_rank = $dayRank;
+                $channel->sort_upcoming = date('Y-m-d', strtotime($today . ' +' . $dayRank . ' days')) . ' ' . $startTime;
+            } else {
+                $showDate = date('Y-m-d', strtotime($upcomingDate));
+                $dayDiff = (int) floor((strtotime($showDate) - strtotime($today)) / 86400);
+                $endDateTime = $this->resolveShowEndDateTime($upcomingDate, $upcomingEndDate);
+
+                if ($dayDiff === 0) {
+                    if ($upcomingDate <= $currentDateTime && $endDateTime >= $currentDateTime) {
+                        $channel->sort_order = 0;
+                        $channel->day_rank = 0;
+                    } elseif ($upcomingDate > $currentDateTime) {
+                        $channel->sort_order = 1;
+                        $channel->day_rank = 0;
+                    } else {
+                        $channel->sort_order = 2;
+                        $channel->day_rank = 999;
+                    }
+                } elseif ($dayDiff > 0) {
+                    $channel->sort_order = 1;
+                    $channel->day_rank = $dayDiff;
+                } else {
+                    $channel->sort_order = 2;
+                    $channel->day_rank = 999;
+                }
+
+                $channel->sort_upcoming = $upcomingDate;
+            }
+
+            return $channel;
+        })->sortBy([
+            ['sort_order', 'asc'],
+            ['day_rank', 'asc'],
+            ['sort_upcoming', 'asc'],
+        ])->values();
+    }
+
+    private function hasValidDateTime($value)
+    {
+        if (empty($value) || $value === '0000-00-00 00:00:00' || $value === '0000-00-00') {
+            return false;
+        }
+
+        $timestamp = strtotime($value);
+
+        return $timestamp !== false && $timestamp > 0;
+    }
+
+    private function resolveShowEndTime($upcomingDate, $upcomingEndDate)
+    {
+        if ($this->hasValidDateTime($upcomingEndDate)) {
+            return date('H:i:s', strtotime($upcomingEndDate));
+        }
+
+        return date('H:i:s', strtotime($upcomingDate . ' +1 hour'));
+    }
+
+    private function resolveShowEndDateTime($upcomingDate, $upcomingEndDate)
+    {
+        if ($this->hasValidDateTime($upcomingEndDate)) {
+            return date('Y-m-d H:i:s', strtotime($upcomingEndDate));
+        }
+
+        return date('Y-m-d H:i:s', strtotime($upcomingDate . ' +1 hour'));
     }
 }

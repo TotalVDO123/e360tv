@@ -1,21 +1,19 @@
 @php
-    $episodeHoverData = [
+    $episodePurchased = $data['is_purchased'] ?? \Modules\Entertainment\Models\Entertainment::isPurchased($data['id'], 'episode');
+    $episodeHoverData = slimCardMovieData([
         'id' => $data['id'],
         'name' => $data['name'],
         'slug' => $data['slug'],
+        'episode_slug' => $data['slug'] ?? null,
         'poster_image' => $data['poster_image'],
-        'duration' => $data['duration'] ?? null,
-        'description' => strip_tags($data['description'] ?? ''),
         'type' => 'episode',
         'access' => $data['access'] ?? null,
         'is_pay_per_view' => ($data['access'] ?? '') == 'pay-per-view',
-        'is_purchased' => \Modules\Entertainment\Models\Entertainment::isPurchased($data['id'], 'episode'),
+        'is_purchased' => $episodePurchased,
         'show_premium_badge' => $data['show_premium_badge'] ?? false,
         'imdb_rating' => $data['imdb_rating'] ?? null,
-        'release_date' => $data['release_date'] ?? null,
-        'episode_number' => $data['episode_number'] ?? null,
-        'entertainment_id' => $data['entertainment_id'] ?? null,
-    ];
+        'trailer_url_type' => $data['trailer_url_type'] ?? '',
+    ]);
 
     $qualityOptions = [];
     foreach ($data['video_links'] as $link) {
@@ -37,14 +35,14 @@
         ? json_encode($data['subtitle_info']->toArray(request()))
         : json_encode([]);
 
-    $isWatchButton = $data['access'] != 'pay-per-view' ||
-        \Modules\Entertainment\Models\Entertainment::isPurchased($data['id'], 'episode');
+    $isWatchButton = $data['access'] != 'pay-per-view' || $episodePurchased;
 @endphp
 <div class="season-card hover-card-container"
      id="episode-card-{{ $data['id'] }}"
      episode-id="{{ $data['id'] }}"
      data-episode-slug="{{ $data['slug'] ?? '' }}"
      data-movie-id="{{ $data['id'] }}"
+     data-movie-type="episode"
      data-movie-data="{{ json_encode($episodeHoverData) }}"
      onmouseenter="openHoverModal(this)"
      onmouseleave="closeHoverModal(this)">

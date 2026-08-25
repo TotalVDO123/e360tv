@@ -2096,3 +2096,86 @@ function deleteBunnyStreamVideoByFile(string $fileName): bool
     // Delete by filename from Bunny Stream
     return bunnyDeleteVideo($fileName, false);
 }
+
+if (!function_exists('slimCardMovieData')) {
+    /**
+     * Card hover JSON for public pages: id, title, image, slug, trailer type, badges only.
+     */
+    function slimCardMovieData($value): array
+    {
+        $value = is_array($value) ? $value : (array) $value;
+        $access = (string) ($value['movie_access'] ?? $value['access'] ?? '');
+
+        return [
+            'id' => $value['id'] ?? null,
+            'name' => $value['name'] ?? '',
+            'slug' => $value['slug'] ?? ($value['episode_slug'] ?? null),
+            'type' => $value['type'] ?? 'movie',
+            'poster_image' => $value['poster_image'] ?? '',
+            'thumbnail_url' => $value['thumbnail_url'] ?? '',
+            'trailer_url_type' => $value['trailer_url_type'] ?? '',
+            'imdb_rating' => $value['imdb_rating'] ?? null,
+            'is_pay_per_view' => !empty($value['is_pay_per_view']) || $access === 'pay-per-view',
+            'is_purchased' => !empty($value['is_purchased']),
+            'show_premium_badge' => !empty($value['show_premium_badge']),
+            'episode_slug' => $value['episode_slug'] ?? null,
+        ];
+    }
+}
+
+if (!function_exists('getSeriesNetworkChannelData')) {
+    /**
+     * Homepage/network row shows for a series network (max 8).
+     */
+    function getSeriesNetworkChannelData(int $networkId): array
+    {
+        if ($networkId <= 0) {
+            return [];
+        }
+
+        return Cache::remember('home_series_network_shows_'.$networkId, 300, function () use ($networkId) {
+            return DB::table('entertainments')
+            ->select(
+                'id',
+                'name',
+                'slug',
+                'type',
+                'trailer_url_type',
+                'movie_access',
+                'imdb_rating',
+                'poster_url',
+                'thumbnail_url'
+            )
+            ->where('status', 1)
+            ->whereNull('deleted_at')
+            ->whereNotNull('network_id')
+            ->where('network_id', '!=', '')
+            ->whereRaw(
+                "FIND_IN_SET(?, REPLACE(network_id, ' ', ''))",
+                [$networkId]
+            )
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('episodes')
+                    ->whereColumn('episodes.entertainment_id', 'entertainments.id')
+                    ->whereNull('episodes.deleted_at')
+                    ->where('episodes.status', 1);
+            })
+            ->orderBy('sno_order', 'ASC')
+            ->limit(8)
+            ->get()
+            ->map(function ($item) {
+                $item->poster_image = setBaseUrlWithFileName($item->poster_url, 'image', 'tvshow');
+                $item->thumbnail_url = setBaseUrlWithFileName($item->thumbnail_url, 'image', 'tvshow');
+                $item->is_pay_per_view = $item->movie_access === 'pay-per-view';
+                $item->is_purchased = false;
+                $item->show_premium_badge = false;
+
+                unset($item->poster_url, $item->movie_access);
+
+                return (array) $item;
+            })
+            ->toArray();
+        });
+    }
+}

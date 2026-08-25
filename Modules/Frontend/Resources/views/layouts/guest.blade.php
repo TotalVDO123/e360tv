@@ -25,7 +25,6 @@
     <link rel="stylesheet" href="{{ asset('iconly/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('phosphor-icons/regular/style.css') }}">
     <link rel="stylesheet" href="{{ asset('phosphor-icons/fill/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('phosphor-icons/bold/style.css') }}">
     <link rel="icon" type="image/png" href="{{ GetSettingValue('favicon') ? setBaseUrlWithFileName(GetSettingValue('favicon'),'image','logos') : asset('img/logo/favicon.png')   }}">
     <link rel="apple-touch-icon" sizes="76x76" href="{{ GetSettingValue('favicon') ? setBaseUrlWithFileName(GetSettingValue('favicon'),'image','logos') : asset('img/logo/favicon.png')  }}">
 

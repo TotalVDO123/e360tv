@@ -1,5 +1,9 @@
 @extends('frontend::layouts.master')
 
+@pushOnce('sweetalert')
+    @include('frontend::components.partials.sweetalert')
+@endPushOnce
+
 @section('title')
     {{ __('messages.all_notifications') }}
 @endsection

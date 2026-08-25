@@ -93,6 +93,9 @@ class SliderResourceV3 extends JsonResource
         }
 
         $entertainment->is_watch_list = $this->getWatchlistStatus($entertainment->id);
+        if (request()->attributes->get('skip_user_content_flags')) {
+            $entertainment->is_purchased = false;
+        }
         $entertainment->user_id = $this->userId;
 
         $entertainment = new CommonContentResourceV3($entertainment);
@@ -144,6 +147,10 @@ class SliderResourceV3 extends JsonResource
 
     private function getWatchlistStatus($entertainmentId)
     {
+        if (request()->attributes->get('skip_user_content_flags')) {
+            return false;
+        }
+
         if (!$this->userId || !$this->profileId) {
             return false;
         }

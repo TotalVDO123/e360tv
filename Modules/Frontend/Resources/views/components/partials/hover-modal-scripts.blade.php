@@ -311,6 +311,8 @@
     <script>
         let hoverModal = null;
         let hoverTimeout = null;
+        let hoverFetchGeneration = 0;
+        const hoverDetailCache = window.hoverDetailCache = window.hoverDetailCache || new Map();
         let lastMouseX = 0;
         let lastMouseY = 0;
         document.addEventListener('mousemove', (e) => {
@@ -320,30 +322,85 @@
             passive: true
         });
 
+        function getCardMovieData(element) {
+            let movieData = {};
+            try {
+                movieData = JSON.parse(element.getAttribute('data-movie-data') || '{}');
+            } catch (e) {
+                movieData = {};
+            }
+            const movieId = element.getAttribute('data-movie-id');
+            const contentType = (movieData.type || element.getAttribute('data-movie-type') || 'movie').trim();
+            const map = window.cardMovieDataMap;
+            if (map && movieId) {
+                const shared = map[contentType + ':' + movieId] || map[String(movieId)];
+                if (shared) {
+                    movieData = Object.assign({}, shared, movieData);
+                }
+            }
+            return {
+                movieData: movieData,
+                movieId: movieId,
+                contentType: contentType
+            };
+        }
+
         // Global hover modal functions
         window.openHoverModal = function(element) {
             clearTimeout(hoverTimeout);
 
-            const movieId = element.getAttribute('data-movie-id');
-            const movieData = JSON.parse(element.getAttribute('data-movie-data') || '{}');
+            const parsed = getCardMovieData(element);
+            const movieId = parsed.movieId;
+            const movieData = parsed.movieData;
             const isSearch = Number(element.getAttribute('data-is-search') || 0);
+            const contentType = parsed.contentType;
 
-            if (!movieId || !movieData) return;
+            if (!movieId) return;
 
             hoverTimeout = setTimeout(() => {
-                createHoverModal(movieId, movieData, element, isSearch);
-            }, 300); // 300ms delay before showing
+                const cacheKey = contentType + ':' + movieId;
+                const generation = ++hoverFetchGeneration;
+
+                const apply = (data) => {
+                    if (generation !== hoverFetchGeneration) return;
+                    createHoverModal(movieId, data, element, isSearch);
+                };
+
+                if (hoverDetailCache.has(cacheKey)) {
+                    apply(Object.assign({}, movieData, hoverDetailCache.get(cacheKey)));
+                    return;
+                }
+
+                apply(movieData);
+
+                const baseUrl = (document.querySelector('meta[name="baseUrl"]')?.getAttribute('content') || '').replace(/\/$/, '');
+                fetch(baseUrl + '/api/frontend/hover/' + encodeURIComponent(contentType) + '/' + encodeURIComponent(movieId), {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then((res) => res.ok ? res.json() : Promise.reject())
+                .then((payload) => {
+                    const detail = payload.data || payload;
+                    hoverDetailCache.set(cacheKey, detail);
+                    apply(Object.assign({}, movieData, detail));
+                })
+                .catch(() => {});
+            }, 300);
         };
 
         window.closeHoverModal = function(element) {
             clearTimeout(hoverTimeout);
 
             hoverTimeout = setTimeout(() => {
+                hoverFetchGeneration++;
                 if (hoverModal) {
                     hoverModal.remove();
                     hoverModal = null;
                 }
-            }, 100); // 100ms delay before hiding
+            }, 100);
         };
 
 
@@ -397,8 +454,8 @@
                     <div class="block-images position-relative w-100" data-trailer-scope="hover-modal" data-trailer-url="${(movieData.trailer_url || '').replace(/"/g, '&quot;')}" data-trailer-type="${movieData.trailer_url_type || ''}">
                         <div class="image-box w-100 position-relative">
                             <a href="${getContentUrl(movieData, isSearch)}" class="d-block w-100 h-100 position-absolute top-0 start-0" style="z-index: 1;"></a>
-                            <img src="${movieData.poster_image || ''}" alt="movie-card"
-                                class="img-fluid object-cover w-100 d-block border-0" loading="lazy" >
+                            <img src="${movieData.poster_image || movieData.thumbnail_url || ''}" alt="movie-card"
+                                class="img-fluid object-cover w-100 d-block border-0" loading="lazy" width="230" height="390">
                                 ${ movieData.is_pay_per_view
                                     ? (movieData.is_purchased
                                         ? `<span class="product-rent"><i class="ph ph-film-reel"></i> Rented</span>`
@@ -680,6 +737,15 @@
                         } catch (e) {
                             console.warn('failed to persist movie data', e);
                         }
+                    }
+                    if (window.hoverDetailCache) {
+                        window.hoverDetailCache.forEach((val, key) => {
+                            if (String(key).endsWith(':' + movieId)) {
+                                window.hoverDetailCache.set(key, Object.assign({}, val, {
+                                    is_watch_list: nowIn ? 1 : 0
+                                }));
+                            }
+                        });
                     }
 
                     // Optional: global snackbar if available

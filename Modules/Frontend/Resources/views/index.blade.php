@@ -54,122 +54,15 @@ body{
 
 <!-------------------live stream---------------------------------------->
 
-<?php 
-
-date_default_timezone_set('America/Los_Angeles');
-
-$currentDateTime = date('Y-m-d H:i:s');
-$today           = date('Y-m-d');
-$currentDay      = date('l');
-$currentTime     = date('H:i:s');
-
-$weekDays        = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-$currentDayIndex = array_search($currentDay, $weekDays, true);
-
-$rows = DB::table('live_tv_channel as c')
-    ->join('live_tv_stream_content_mapping as m', 'c.id', '=', 'm.tv_channel_id')
-    ->select('c.*', 'm.upcoming_date', 'm.upcoming_end_date', 'm.recurring_program')
-    ->where('c.status', 1)
-    ->whereNull('c.deleted_at')
-    ->whereNull('m.deleted_at')
-    ->where(function ($q) use ($currentDateTime) {
-        $q->where(function ($q2) use ($currentDateTime) {
-            $q2->where('m.recurring_program', 0)
-               ->where('m.upcoming_end_date', '>=', $currentDateTime);
-        })->orWhere('m.recurring_program', 1);
-    })
-    ->get();
-
-$classified = $rows->map(function ($item) use ($currentDateTime, $currentTime, $today, $weekDays, $currentDayIndex) {
-    $item = (array) $item;
-
-    if ($item['recurring_program'] == 1) {
-        $showDay      = date('l', strtotime($item['upcoming_date']));
-        $startTime    = date('H:i:s', strtotime($item['upcoming_date']));
-        $endTime      = date('H:i:s', strtotime($item['upcoming_end_date']));
-        $showDayIndex = array_search($showDay, $weekDays, true);
-        $dayRank      = ($showDayIndex - $currentDayIndex + 7) % 7;
-
-        if ($dayRank === 0) {
-            if ($startTime <= $currentTime && $endTime >= $currentTime) {
-                $item['sort_order'] = 0; // live now
-            } elseif ($startTime > $currentTime) {
-                $item['sort_order'] = 1; // next live today
-            } else {
-                $item['sort_order'] = 2; // already ended today
-            }
-        } else {
-            $item['sort_order'] = 1; // next live on a later day
-        }
-
-        $item['day_rank']      = $dayRank;
-        $item['sort_upcoming'] = date('Y-m-d', strtotime($today . ' +' . $dayRank . ' days')) . ' ' . $startTime;
-    } else {
-        $upcomingDate = date('Y-m-d', strtotime($item['upcoming_date']));
-        $dayDiff      = (int) floor((strtotime($upcomingDate) - strtotime($today)) / 86400);
-
-        if ($dayDiff === 0) {
-            if ($item['upcoming_date'] <= $currentDateTime && $item['upcoming_end_date'] >= $currentDateTime) {
-                $item['sort_order'] = 0;
-            } elseif ($item['upcoming_date'] > $currentDateTime) {
-                $item['sort_order'] = 1;
-            } else {
-                $item['sort_order'] = 2;
-            }
-            $item['day_rank'] = 0;
-        } elseif ($dayDiff > 0) {
-            $item['sort_order'] = 1;
-            $item['day_rank']   = $dayDiff;
-        } else {
-            $item['sort_order'] = 2;
-            $item['day_rank']   = 999;
-        }
-
-        $item['sort_upcoming'] = $item['upcoming_date'];
-    }
-
-    return $item;
-});
-
-$liveAndNext = $classified->filter(function ($item) {
-    return in_array($item['sort_order'], [0, 1], true);
-});
-
-$todayLiveAndNext = $liveAndNext->filter(function ($item) {
-    return (int) $item['day_rank'] === 0;
-});
-
-if ($todayLiveAndNext->isNotEmpty()) {
-    $data_channels = $todayLiveAndNext;
-} else {
-    $nextDayRank = $liveAndNext->min('day_rank');
-
-    $data_channels = $nextDayRank !== null
-        ? $liveAndNext->filter(function ($item) use ($nextDayRank) {
-            return (int) $item['day_rank'] === (int) $nextDayRank;
-        })
-        : collect();
-}
-
-$data_channels = $data_channels
-    ->sortBy([
-        ['sort_order', 'asc'],
-        ['sort_upcoming', 'asc'],
-    ])
-    ->take(18)
-    ->values()
-    ->toArray();
-?>
-
      @if (isenablemodule('livetv') == 1)
      
      
     
                 <div id="topchannel-section" class="section-wraper scroll-section section-hidden">
                 
-                    @if (isset($data_channels) && count($data_channels) > 0)
+                    @if (!empty($data_channels))
                         @include('frontend::components.section.tvchannel', [
-                            'top_channel' =>$data_channels ?? [],
+                            'top_channel' => $data_channels,
                             'title' => 'Live Stream' ?? __('frontend.top_channels'),
                         ])
                     @endif
@@ -552,6 +445,8 @@ $data_channels = $data_channels
                 <div id="more-infinity-section">
                     @include('frontend::components.section.tv_series_shows_network', [
                         'moreinfinity' => $seriesNetworks,
+                        'eagerCount' => 1,
+                        'networkChannelData' => $networkChannelData ?? [],
                     ])
                 </div>
             </div>
@@ -585,15 +480,17 @@ $data_channels = $data_channels
 @endsection
 
 @push('after-scripts')
+    <style>
+        .lazy-home-section:not(.is-loaded) {
+            min-height: 320px;
+        }
+    </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
             function initializeSections() {
-
                 const sections = document.querySelectorAll('.section-hidden');
-
                 sections.forEach(section => {
-
                     section.classList.remove('section-hidden');
                     section.classList.add('section-visible');
                 });
@@ -602,7 +499,6 @@ $data_channels = $data_channels
             function initializeCustomAdsSlider() {
                 const adSection = document.getElementById('custom-homepage-ad-section');
                 if (adSection && adSection.querySelector('.custom-ad-slider')) {
-
                     if (window.$ && typeof $.fn.slick === 'function') {
                         $('.custom-ad-slider').slick({
                             dots: true,
@@ -624,7 +520,99 @@ $data_channels = $data_channels
                 }
             }
 
+            function initSlickIn(root) {
+                if (!window.jQuery || typeof jQuery.fn.slick !== 'function') return;
+                const isRTL = (document.documentElement.getAttribute('dir') || '').toLowerCase() === 'rtl';
+                jQuery(root).find('.slick-general').each(function() {
+                    const slider = jQuery(this);
+                    if (slider.hasClass('slick-initialized')) return;
+                    const slideSpacing = slider.data('spacing');
+                    if (slideSpacing) {
+                        slider.css('--spacing', slideSpacing + 'px');
+                    }
+                    slider.slick({
+                        slidesToShow: slider.data('items'),
+                        slidesToScroll: 1,
+                        speed: slider.data('speed'),
+                        autoplay: slider.data('autoplay'),
+                        centerMode: slider.data('center'),
+                        infinite: slider.data('infinite'),
+                        arrows: slider.data('navigation'),
+                        dots: slider.data('pagination'),
+                        prevArrow: "<span class='slick-arrow-prev'><span class='slick-nav'><i class='ph ph-caret-left'></i></span></span>",
+                        nextArrow: "<span class='slick-arrow-next'><span class='slick-nav'><i class='ph ph-caret-right'></i></span></span>",
+                        rtl: isRTL,
+                        responsive: [
+                            { breakpoint: 1600, settings: { slidesToShow: slider.data('items-desktop') } },
+                            { breakpoint: 1400, settings: { slidesToShow: slider.data('items-laptop') } },
+                            { breakpoint: 1200, settings: { slidesToShow: slider.data('items-tab') } },
+                            { breakpoint: 768, settings: { slidesToShow: slider.data('items-mobile-sm') } },
+                            { breakpoint: 576, settings: { slidesToShow: slider.data('items-mobile') } }
+                        ]
+                    });
+                });
+            }
+
+            function loadLazyHomeSection(el) {
+                if (!el || el.dataset.loaded === '1' || el.dataset.loading === '1') return;
+                const type = el.getAttribute('data-lazy-section');
+                const id = el.getAttribute('data-id');
+                if (type !== 'network' || !id) return;
+
+                el.dataset.loading = '1';
+                const baseUrl = (document.querySelector('meta[name="baseUrl"]')?.getAttribute('content') || '').replace(/\/$/, '');
+
+                fetch(baseUrl + '/api/frontend/home/network/' + encodeURIComponent(id), {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then((res) => res.ok ? res.json() : Promise.reject())
+                .then((payload) => {
+                    el.dataset.loaded = '1';
+                    el.dataset.loading = '0';
+                    window.cardMovieDataMap = Object.assign({}, window.cardMovieDataMap || {}, payload.cardMovieDataMap || {});
+                    if (!payload.html) {
+                        el.remove();
+                        return;
+                    }
+                    el.innerHTML = payload.html;
+                    el.classList.add('is-loaded');
+                    el.removeAttribute('aria-busy');
+                    initSlickIn(el);
+                })
+                .catch(() => {
+                    el.dataset.loading = '0';
+                });
+            }
+
+            function observeLazyHomeSections() {
+                const placeholders = document.querySelectorAll('.lazy-home-section[data-lazy-section="network"]');
+                if (!placeholders.length) return;
+
+                if (!('IntersectionObserver' in window)) {
+                    placeholders.forEach(loadLazyHomeSection);
+                    return;
+                }
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (!entry.isIntersecting) return;
+                        observer.unobserve(entry.target);
+                        loadLazyHomeSection(entry.target);
+                    });
+                }, {
+                    rootMargin: '240px 0px',
+                    threshold: 0.01
+                });
+
+                placeholders.forEach((el) => observer.observe(el));
+            }
+
             initializeSections();
+            observeLazyHomeSections();
 
             setTimeout(() => {
                 initializeCustomAdsSlider();

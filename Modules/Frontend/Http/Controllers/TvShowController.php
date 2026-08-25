@@ -33,6 +33,7 @@ use Modules\Frontend\Models\PayPerView;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Modules\Frontend\Services\HomePageDataService;
 
 
 
@@ -794,18 +795,17 @@ class TvShowController extends Controller
         $sliders = SliderResourceV3::collection($featured_tvshow);
         $sliders =  $sliders->toArray(request());
         
-        $seriesNetworks = DB::table('series_networks')
-        ->select('id', 'order', 'parent_id', 'name', 'image', 'banner_image', 'slug')
-         ->where('network_list_active', 1)
-        ->orderBy('order', 'ASC')
-        ->get();
-        
-        
-       // print_r($seriesNetworks);
-        
-       
-        
-        return view('frontend::tv_series_shows',compact('seriesNetworks'));
+        $seriesNetworks = Cache::remember('home_series_networks', 300, function () {
+            return DB::table('series_networks')
+                ->select('id', 'order', 'parent_id', 'name', 'image', 'banner_image', 'slug')
+                ->where('network_list_active', 1)
+                ->orderBy('order', 'ASC')
+                ->get();
+        });
+
+        $networkChannelData = app(HomePageDataService::class)->getNetworkChannelDataMap($seriesNetworks);
+
+        return view('frontend::tv_series_shows', compact('seriesNetworks', 'networkChannelData'));
     }
     
     

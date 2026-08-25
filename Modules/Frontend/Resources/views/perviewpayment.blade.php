@@ -1,4 +1,7 @@
 @extends('frontend::layouts.master')
+@pushOnce('phosphor-extra')
+    <link rel="stylesheet" href="{{ asset('phosphor-icons/bold/style.css') }}">
+@endPushOnce
 @section('title')
     {{ __('messages.pay_per_view') }}
 @endsection

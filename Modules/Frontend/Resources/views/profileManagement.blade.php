@@ -1,5 +1,9 @@
 @extends('frontend::layouts.master')
 
+@pushOnce('sweetalert')
+    @include('frontend::components.partials.sweetalert')
+@endPushOnce
+
 @section('title')
     {{ __('frontend.profiles') }}
 @endsection
@@ -242,7 +246,6 @@
             ->where('is_child_profile', 0)
             ->count();
     @endphp
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Helper: open hidden file input for profile image
         function triggerProfileFileInput() {
