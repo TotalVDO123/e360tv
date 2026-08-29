@@ -41,7 +41,7 @@ class HomePageDataService
     {
         $previousTz = date_default_timezone_get();
         date_default_timezone_set('America/Los_Angeles');
-
+        
         try {
             $currentDateTime = date('Y-m-d H:i:s');
             $today = date('Y-m-d');
@@ -120,28 +120,30 @@ class HomePageDataService
                 return in_array($item['sort_order'], [0, 1], true);
             });
 
-            $todayLiveAndNext = $liveAndNext->filter(function ($item) {
-                return (int) $item['day_rank'] === 0;
-            });
+            $limit = 18;
+            $data_channels = collect();
 
-            if ($todayLiveAndNext->isNotEmpty()) {
-                $data_channels = $todayLiveAndNext;
-            } else {
-                $nextDayRank = $liveAndNext->min('day_rank');
+            $dayRanks = $liveAndNext->pluck('day_rank')->unique()->sort()->values();
 
-                $data_channels = $nextDayRank !== null
-                    ? $liveAndNext->filter(function ($item) use ($nextDayRank) {
-                        return (int) $item['day_rank'] === (int) $nextDayRank;
+            foreach ($dayRanks as $dayRank) {
+                $dayItems = $liveAndNext
+                    ->filter(function ($item) use ($dayRank) {
+                        return (int) $item['day_rank'] === (int) $dayRank;
                     })
-                    : collect();
+                    ->sortBy([
+                        ['sort_order', 'asc'],
+                        ['sort_upcoming', 'asc'],
+                    ]);
+
+                $data_channels = $data_channels->concat($dayItems);
+
+                if ($data_channels->count() >= $limit) {
+                    break;
+                }
             }
 
             return $data_channels
-                ->sortBy([
-                    ['sort_order', 'asc'],
-                    ['sort_upcoming', 'asc'],
-                ])
-                ->take(18)
+                ->take($limit)
                 ->values()
                 ->toArray();
         } finally {

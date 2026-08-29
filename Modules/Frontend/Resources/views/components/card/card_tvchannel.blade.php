@@ -63,16 +63,16 @@
 
 
 <?php
- date_default_timezone_set('America/Los_Angeles');
+    date_default_timezone_set('America/Los_Angeles');
 
-$streamData = (object) [
-    'upcoming_date' => $value['upcoming_date'] ?? null,
-    'upcoming_end_date' => $value['upcoming_end_date'] ?? null,
-    'recurring_program' => $value['recurring_program'] ?? null,
-];
-$sortOrder = isset($value['sort_order']) ? (int) $value['sort_order'] : null;
+    $streamData = (object) [
+        'upcoming_date' => $value['upcoming_date'] ?? null,
+        'upcoming_end_date' => $value['upcoming_end_date'] ?? null,
+        'recurring_program' => $value['recurring_program'] ?? null,
+    ];
+    $sortOrder = isset($value['sort_order']) ? (int) $value['sort_order'] : null;
 
-$upcoming_date = $streamData->upcoming_date ?? '';
+    $upcoming_date = $streamData->upcoming_date ?? '';
            $playlist="";
             if (!empty($value['server_url']))
             {
@@ -102,13 +102,6 @@ $upcoming_date = $streamData->upcoming_date ?? '';
         class="livetv-card d-block position-relative">
         <div class="image-box position-relative">
             
-            
-            <?php /* ?>
-            <img src="{{ $value['poster_image'] }}" alt="{{ $value['name'] }}"
-                class="livetv-img object-cover img-fluid w-100 rounded">
-                
-            <?php */ ?>    
-            
             <img src="{{ $value['poster_image'] }}" alt="{{ $value['name'] }}"
                 class="object-cover img-fluid rounded" width="230" height="390">
             
@@ -120,61 +113,12 @@ $upcoming_date = $streamData->upcoming_date ?? '';
                     <i class="ph ph-crown-simple"></i>
                 </button>
             @endif
-
-          <!--  <span class="live-card-badge">
-                <span
-                    class="live-badge fw-semibold text-uppercase">{{ __('frontend.live') }}</span>
-            </span>-->
         </div>
     </a>
-    
-  
-
-
-<!--
-@if($isLive)
-    <span class="badge bg-danger position-absolute top-0 end-0 m-2">
-        ðŸ”´ LIVE
-    </span>
-@elseif($upcoming_date)
-
-    <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">
-        Upcoming<br>
-        {{ \Carbon\Carbon::parse($upcoming_date)->format('d M Y h:i A') }}
-    </span>
-@endif
-   -->
- <?php /* ?>  
- @if(empty($streamData->recurring_program))    
-@php
-    // 1. Safely parse the date if it exists
-    $upcomingCarbon = $upcoming_date ? \Carbon\Carbon::parse($upcoming_date) : null;
-    
-    // 2. Strict boolean check for live status (handles string "false" or "0")
-    $isCurrentlyLive = filter_var($isLive, FILTER_VALIDATE_BOOLEAN);
-@endphp
-
-@if($isCurrentlyLive)
-    <span class="badge bg-success position-absolute top-0 end-0 m-2">
-        ðŸ”´ LIVE
-    </span>
-@elseif($upcomingCarbon && $upcomingCarbon->isFuture())
-    <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2" >
-        Upcoming<br>
-       {{ \Carbon\Carbon::parse($upcoming_date)->isoFormat('DD MMM YYYY hh:mm A') }}
-    </span>
-@else
-    <span class="badge bg-secondary position-absolute top-0 end-0 m-2">
-        ðŸš« Offline
-    </span>
-@endif
- 
-@endif   
-
-<?php */ ?>  
 
 <?php
- date_default_timezone_set('America/Los_Angeles');
+ 
+date_default_timezone_set('America/Los_Angeles');
 
 $currentDateTime = date('Y-m-d H:i:s');
 
@@ -201,19 +145,13 @@ if (!empty($streamData->recurring_program)) {
     }
 }else{              
     ?>    
-        <!-- <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">
+        <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">
             🟡 <strong>NEXT LIVE</strong><br>
             {{ $day }} • {{ \Carbon\Carbon::parse($upcoming_date)->format('h:i A') }} PT
-        </span> -->
+        </span>
      <?php   
     }
- ?>                   
-
-
-
-
-
-
+ ?>
 </div>   
     
 </div>

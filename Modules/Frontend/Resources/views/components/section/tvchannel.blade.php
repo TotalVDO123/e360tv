@@ -153,44 +153,16 @@
                   <div class="slick-item">
                   <div class="position-relative">
                    
-                   <?php /* ?>
-                   <a href="{{ route('livetv-details', ['id' => $data['slug']]) }}"
-                        class="channel-card d-flex align-content-center align-items-center justify-content-center rounded">
-                        <img src="{{ setBaseUrlWithFileName($data['poster_url'], 'image', 'livetv')  }}" alt="channel icon"
-                            class="img-fluid object-cover rounded channel-img" width="500" height="200">
-                    </a>
-                    <?php */ ?>
                    
                     <a href="{{ route('livetv-details', ['id' => $data['slug']]) }}"
                         class="d-flex align-content-center align-items-center justify-content-center rounded">
                         <img src="{{ setBaseUrlWithFileName($data['poster_url'], 'image', 'livetv')  }}" alt="channel icon"
                             class="img-fluid object-cover rounded channel-img" width="230" height="390">
                     </a>
-             <!--   
-                
-                 @if($isLive)
-                <span class="position-absolute top-0 end-0 badge bg-danger m-2">
-                    ðŸ”´ LIVE
-                </span>
-                @endif
-                
-                
-                @if(!$isLive && !empty($upcoming_date))
-    <span class="position-absolute top-0 end-0 badge bg-warning text-dark m-2">
-        Upcoming:<br>
-        {{ \Carbon\Carbon::parse($upcoming_date)->format('D, d M h:i A') }}
-    </span>
-@endif
-    -->            
+                     
         
-@if(empty($streamData->recurring_program))  
-
-
-
-          
+@if(empty($streamData->recurring_program))
            @php
-           
-           
             // 1. Safely parse the date if it exists
             $upcomingCarbon = $upcoming_date ? \Carbon\Carbon::parse($upcoming_date) : null;
             
@@ -203,8 +175,7 @@
                 🔴 LIVE
             </span>
         @elseif($upcomingCarbon && $upcomingCarbon->isFuture())
-            <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">
-                Upcoming<br>
+            <span class="badge bg-danger text-white position-absolute bottom-0 end-0 m-2 px-2 py-1">🟡 <strong>NEXT LIVE</strong><br>
                {{ \Carbon\Carbon::parse($upcoming_date)->isoFormat('DD MMM YYYY hh:mm A') }}
             </span>
         @else
@@ -248,14 +219,6 @@ if (!empty($streamData->recurring_program)) {
         <?php
     }
 }
-
-
-
-
-
-
-
-
  ?>                   
                 
             </div>    
