@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Yajra\DataTables\DataTables;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Modules\Entertainment\Services\ContentViewService;
 
 class VideoService
 {
@@ -90,7 +91,7 @@ class VideoService
         })
         ->orderColumn('like_count', 'entertainment_like_count $1')
         ->addColumn('watch_count', function ($data) {
-            return $data->entertainment_view_count > 0 ? $data->entertainment_view_count : '-';
+            return app(ContentViewService::class)->adminCellHtml('video', (int) $data->id);
         })
         ->orderColumn('watch_count', 'entertainment_view_count $1')
 

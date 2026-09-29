@@ -298,6 +298,16 @@
                                     <button class="btn btn-primary" id="watchNowButton" data-type="{{ $type }}"
                                         data-entertainment-id="{{ $data['id'] }}"
                                         data-entertainment-type="{{ $data['type'] }}"
+                                        @php
+                                            $viewContentType = app(\Modules\Entertainment\Services\ContentViewService::class)
+                                                ->resolveEntertainmentContentType([
+                                                    'type' => $data['type'] ?? 'tvshow',
+                                                    'network_id' => $data['network_id']
+                                                        ?? optional(\Modules\Entertainment\Models\Entertainment::select('network_id')->find($data['id']))->network_id
+                                                        ?? '',
+                                                ]);
+                                        @endphp
+                                        data-view-content-type="{{ $viewContentType }}"
                                         data-video-url="{{ $video_url }}"
                                         data-movie-access="{{ $data['movie_access'] }}" content-video-type="video"
                                         data-plan-id="{{ $data['plan_id'] }}" data-user-id="{{ auth()->id() }}"
@@ -305,14 +315,14 @@
                                         data-profile-id="{{ getCurrentProfile(auth()->id(), request()) }}"
                                         data-episode-id="{{ $episode_id }}" data-first-episode-id="1"
                                         data-quality-options="{{ $qualityOptionsJson }}"
-                                        data-subtitle-info="{{ $subtitleInfoJson }}",
-                                        data-contentid="{{ $data['type'] == 'movie' ? $data['id'] : $episode_id }}",
-                                        data-contenttype="{{ $data['type'] }}",
+                                        data-subtitle-info="{{ $subtitleInfoJson }}"
+                                        data-contentid="{{ $data['type'] == 'movie' ? $data['id'] : $episode_id }}"
+                                        data-contenttype="{{ $data['type'] }}"
                                         data-start-time="{{ $intro_starts_at }}" data-end-time="{{ $intro_ends_at }}"
                                         content-video-type="video"
                                         @isset($episode_name)
                                     data-episode-name="{{ $episode_name }}"
-                                @endif
+                                @endisset
                             >
                                 <span class="d-flex align-items-center justify-content-center gap-2">
                                     <span><i class="ph-fill ph-play"></i></span>

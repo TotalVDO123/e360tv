@@ -3,13 +3,20 @@
 namespace App\Providers;
 
 use App\Services\ChatGTPService;
+use Bangnokia\LaravelBunnyStorage\BunnyStorageAdapter;
+use Bangnokia\LaravelBunnyStorage\BunnyStorageClient;
+use GuzzleHttp\Client as Guzzle;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\Translator;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Support\Facades\Event;
+use League\Flysystem\Filesystem;
+use League\Flysystem\PathPrefixing\PathPrefixedAdapter;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -52,6 +59,8 @@ class AppServiceProvider extends ServiceProvider
 
         Paginator::useBootstrap();
 
+        $this->registerBunnyStorageDriver();
+
         Blade::directive('hasPermission', function ($permissions) {
             return "<?php if(Auth::user()->can({$permissions})): ?>";
         });
@@ -74,6 +83,43 @@ class AppServiceProvider extends ServiceProvider
             $trans->setFallback($app['config']['app.fallback_locale']);
 
             return $trans;
+        });
+    }
+
+    /**
+     * Point BunnyCDN Guzzle at a local CA bundle on Windows WAMP,
+     * where PHP often has no curl.cainfo and HTTPS listing fails with cURL error 60.
+     */
+    private function registerBunnyStorageDriver(): void
+    {
+        Storage::extend('bunny', function ($app, $config) {
+            $root = $config['root'] ?? '';
+            $pullZoneUrl = $config['pull_zone'] ?? '';
+
+            if ($pullZoneUrl && $root) {
+                $pullZoneUrl = rtrim($pullZoneUrl, '/') . '/' . ltrim($root, '/');
+            }
+
+            $client = new BunnyStorageClient(
+                $config['storage_zone'],
+                $config['api_key'],
+                $config['region'],
+            );
+
+            $cafile = 'C:/wamp64/bin/php/cacert.pem';
+            if (PHP_OS_FAMILY === 'Windows' && is_file($cafile)) {
+                $client->guzzleClient = new Guzzle(['verify' => $cafile]);
+            }
+
+            $adapter = new BunnyStorageAdapter($client, $pullZoneUrl);
+
+            if ($root) {
+                $filesystem = new Filesystem(new PathPrefixedAdapter($adapter, $root), $config);
+            } else {
+                $filesystem = new Filesystem($adapter, $config);
+            }
+
+            return new FilesystemAdapter($filesystem, $adapter, $config);
         });
     }
 }

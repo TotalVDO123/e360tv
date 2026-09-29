@@ -413,7 +413,9 @@ class EntertainmentService
         })
         ->orderColumn('like_count', 'entertainment_like_count $1')
         ->addColumn('watch_count', function ($data) {
-            return $data->entertainment_view_count > 0 ? $data->entertainment_view_count : '-';
+            $viewType = app(ContentViewService::class)->resolveEntertainmentContentType($data);
+
+            return app(ContentViewService::class)->adminCellHtml($viewType, (int) $data->id);
         })
         ->orderColumn('watch_count', 'entertainment_view_count $1')
         ->filterColumn('thumbnail_url', function ($query, $keyword) {
@@ -479,7 +481,7 @@ class EntertainmentService
         })
         ->editColumn('updated_at', fn($data) => formatUpdatedAt($data->updated_at))
         ->orderColumns(['id'], '-:column $1')
-        ->rawColumns(['action', 'status', 'check', 'thumbnail_url', 'is_restricted'])
+        ->rawColumns(['action', 'status', 'check', 'thumbnail_url', 'is_restricted', 'watch_count'])
         ->toJson();
 }
     public function getFilteredData($filter, $type)

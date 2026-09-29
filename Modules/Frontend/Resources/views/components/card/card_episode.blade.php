@@ -62,7 +62,7 @@
                     data-bs-title="{{ __('messages.lbl_premium') }}"><i class="ph ph-crown-simple"></i></button>
             @endif
             <button class="season-watch-btn {{ $isWatchButton ? '' : 'd-none' }}" id="seasonWatchBtn_{{ $data['id'] }}"
-                data-entertainment-id="{{ $data['entertainment_id'] }}" data-entertainment-type="tvshow"
+                data-entertainment-id="{{ $data['entertainment_id'] }}" data-entertainment-type="episode"
                 data-type="{{ $type }}"
                 data-video-url="{{ $video_url_input }}" data-movie-access="{{ $data['access'] }}"
                 data-purchase-type="{{ $data['purchase_type'] }}"
@@ -71,7 +71,7 @@
                 data-episode-slug="{{ $data['slug'] ?? '' }}"
                 data-first-episode-id="{{ $index + 1 }}" data-quality-options="{{ json_encode($qualityOptions) }}"
                 data-subtitle-info="{{ $subtitleInfoJson }}" data-contentid="{{ $data['id'] }}"
-                data-contenttype="tvshow" content-video-type="video" data-episode-name="{{ $data['name'] }}"
+                data-contenttype="episode" content-video-type="video" data-episode-name="{{ $data['name'] }}"
                 data-start-time="{{ $data['intro_starts_at'] }}" data-end-time="{{ $data['intro_ends_at'] }}"
                 data-poster-url="{{ $data['poster_image'] }}">
                 <span class="d-flex align-items-center justify-content-center gap-2">

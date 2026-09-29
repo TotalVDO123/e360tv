@@ -110,6 +110,10 @@ class ProcessFileUpload implements ShouldQueue
                 
                 $cfg    = config('filesystems.disks.' . $this->diskType);
   $client = new BunnyCDNClient($cfg['storage_zone'], $cfg['api_key'], $cfg['region']);
+  $cafile = 'C:/wamp64/bin/php/cacert.pem';
+  if (PHP_OS_FAMILY === 'Windows' && is_file($cafile)) {
+      $client->guzzleClient = new \GuzzleHttp\Client(['verify' => $cafile]);
+  }
   $root   = trim($cfg['root'] ?? '', '/');
   $target = $root !== '' ? $root . '/' . $folderPath : $folderPath;
   $stream = fopen(Storage::disk('local')->path($this->filePath), 'rb');

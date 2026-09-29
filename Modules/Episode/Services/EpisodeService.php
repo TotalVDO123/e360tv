@@ -5,6 +5,7 @@ namespace Modules\Episode\Services;
 use Modules\Episode\Repositories\EpisodeRepositoryInterface;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Cache;
+use Modules\Entertainment\Services\ContentViewService;
 
 class EpisodeService
 {
@@ -244,12 +245,12 @@ class EpisodeService
             $query->orderBy('status', $order);
         })
         ->addColumn('watch_count', function ($data) {
-            return $data->entertainment_view_count > 0 ? $data->entertainment_view_count : '-';
+            return app(ContentViewService::class)->adminCellHtml('episode', (int) $data->id);
         })
         ->orderColumn('watch_count', 'entertainment_view_count $1')
           ->editColumn('updated_at', fn($data) =>formatUpdatedAt($data->updated_at))
             ->orderColumns(['id'], '-:column $1')
-            ->rawColumns(['action', 'status', 'check','poster_url','entertainment_id','season_id','plan_id','is_restricted'])
+            ->rawColumns(['action', 'status', 'check','poster_url','entertainment_id','season_id','plan_id','is_restricted','watch_count'])
             ->toJson();
     }
 

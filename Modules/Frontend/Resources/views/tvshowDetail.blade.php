@@ -22,7 +22,7 @@
             'type' => $data['trailer_url_type'],
             'thumbnail_image' => $data['poster_image'],
             'subtitle_info' => '',
-            'content_type' => 'tvshow',
+            'content_type' => $data['type'],
             'content_id' => $data['id'],
             'video_type' => $data['video_upload_type'],
             'content_video_type' => 'trailer',

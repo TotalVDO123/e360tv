@@ -162,10 +162,6 @@ class NetworkController extends Controller
                 ';
             })
 
-        
-        
-        
-        
           ->editColumn('order_your_shows', function ($row) {
              
                return '
@@ -192,7 +188,6 @@ class NetworkController extends Controller
             'network_list_active',
             'order_your_shows',
             'action',
-         
         ])
 
         ->toJson();

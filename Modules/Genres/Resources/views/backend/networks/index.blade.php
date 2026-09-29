@@ -150,13 +150,6 @@
                 name: 'status',
                 title: "{{ __('messages.lbl_status') }}"
             },
-            
-            
-            
-            
-            
-            
-            
             {
                 data: 'updated_at',
                 name: 'updated_at',

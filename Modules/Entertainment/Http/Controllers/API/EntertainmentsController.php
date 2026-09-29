@@ -56,6 +56,7 @@ use Modules\Video\Transformers\VideoResourceV3;
 use Modules\Entertainment\Transformers\Backend\CommonContentResourceV3;
 use Modules\Entertainment\Transformers\Backend\ComingSoonResourceV3;
 use Illuminate\Support\Facades\Cache;
+use Modules\Entertainment\Services\ContentViewService;
 use Modules\Entertainment\Transformers\ContentDetailsCastCrewV3;
 use Modules\LiveTV\Models\LiveTvChannel;
 use Modules\LiveTV\Transformers\LiveTvChannelResourceV3;
@@ -1965,13 +1966,17 @@ class EntertainmentsController extends Controller
         $data['user_id'] = $user->id;
         $viewData = EntertainmentView::where('entertainment_id', $request->entertainment_id)->where('user_id', $user->id)->first();
 
-        Cache::flush();
-
         if (!$viewData) {
-            $views = EntertainmentView::create($data);
+            EntertainmentView::create($data);
             $message = __('movie.view_add');
         } else {
             $message = __('movie.already_added');
+        }
+
+        try {
+            app(ContentViewService::class)->recordFromLegacy($request, $user->id);
+        } catch (\Throwable $e) {
+            \Log::warning('content view bridge failed: ' . $e->getMessage());
         }
 
         return response()->json(['status' => true, 'message' => $message]);

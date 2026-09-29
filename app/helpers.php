@@ -767,7 +767,17 @@ function getMediaUrls($searchQuery = null, $perPage = 21, $page = 1)
     $activeDisk = env('ACTIVE_STORAGE'); // set on live server
 
     $folder = $activeDisk === 'local' ? 'public/' : '';
-    $files = Storage::disk($activeDisk)->allFiles($folder);
+
+    try {
+        $files = Storage::disk($activeDisk)->allFiles($folder);
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error('getMediaUrls failed: '.$e->getMessage());
+
+        return [
+            'mediaUrls' => [],
+            'hasMore' => false,
+        ];
+    }
 
     if ($searchQuery) {
         $files = array_filter($files, function ($file) use ($searchQuery) {

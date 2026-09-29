@@ -1,1 +1,421 @@
-
+{
+  "title": "E360TV Content View Count APIs",
+  "base_url": "https://e360tv.com/api",
+  "storage": {
+    "table": "content_views",
+    "columns": ["content_type", "content_id", "user_id", "device_type", "device_id", "created_at", "updated_at"],
+    "note": "One row per counted view. Counts are aggregated from this table. No schema change required for film/music — they are stored in content_type string values resolved from series_networks."
+  },
+  "total_apis": 3,
+  "summary": [
+    {
+      "no": 1,
+      "method": "POST",
+      "url": "/api/v3/save-content-view",
+      "auth": "optional",
+      "note": "Call when Watch Now playback starts. Counts livetv, tvshow, episode, film, music, or video."
+    },
+    {
+      "no": 2,
+      "method": "GET",
+      "url": "/api/v3/content-view-summary",
+      "auth": "none",
+      "note": "Display totals for a selected year (default: current year), with month-wise breakdown in by_month. by_content_type keys appear in order: livetv, tvshow, episode, film, music, video."
+    },
+    {
+      "no": 3,
+      "method": "POST",
+      "url": "/api/save-entertainment-views",
+      "auth": "required (Sanctum)",
+      "note": "OLD API kept for old app builds. Also writes into content_views."
+    }
+  ],
+  "common_headers": {
+    "required": {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "device-type": "website | android | ios | android_tv | roku_tv | amazon_fire_tv"
+    },
+    "optional": {
+      "Authorization": "Bearer {sanctum_token}"
+    },
+    "device_type_values": {
+      "website": "Website",
+      "android": "Android",
+      "ios": "iOS",
+      "android_tv": "Android TV",
+      "roku_tv": "Roku TV",
+      "amazon_fire_tv": "Amazon Fire TV"
+    },
+    "device_type_aliases": {
+      "web": "website",
+      "iphone": "ios",
+      "ipad": "ios",
+      "tv": "android_tv",
+      "roku": "roku_tv",
+      "fire_tv": "amazon_fire_tv",
+      "firetv": "amazon_fire_tv"
+    }
+  },
+  "content_type_values": {
+    "allowed": ["livetv", "tvshow", "episode", "film", "music", "video"],
+    "display_order": ["livetv", "tvshow", "episode", "film", "music", "video"],
+    "aliases_accepted": {
+      "movie": "Mapped then resolved like film/tvshow from networks (legacy)",
+      "vedio": "video"
+    },
+    "rules": {
+      "livetv": "Send live_tv_channel.id. Use when URL is livetv-details/{slug}.",
+      "tvshow": "Send entertainments.id for a normal TV show (not e360films / e360music). Server also re-resolves film/music from series_networks if client sends tvshow.",
+      "episode": "Send episodes.id when user watches a specific episode",
+      "film": "Send entertainments.id when show belongs to network e360films or e360film (example: /tvshow-details/sami-blood).",
+      "music": "Send entertainments.id when show belongs to network e360music (example: /tvshow-details/country-music).",
+      "video": "Send videos.id"
+    }
+  },
+  "apis": [
+    {
+      "no": 1,
+      "name": "Save Content View",
+      "method": "POST",
+      "path": "/api/v3/save-content-view",
+      "full_url": "https://e360tv.com/api/v3/save-content-view",
+      "auth": "Optional. Never returns 401 for missing login.",
+      "when_to_call": "When user clicks Watch Now and playback actually starts.",
+      "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "device-type": "android",
+        "Authorization": "Bearer {token}   // optional, only if logged in"
+      },
+      "request_body": {
+        "content_type": "tvshow",
+        "content_id": 220,
+        "user_id": 10,
+        "device_id": "a1b2c3d4-device-uuid",
+        "device_type": "android"
+      },
+      "request_body_fields": {
+        "content_type": {
+          "type": "string",
+          "required": true,
+          "values": ["livetv", "tvshow", "episode", "film", "music", "video"],
+          "aliases": ["movie", "vedio"]
+        },
+        "content_id": {
+          "type": "integer",
+          "required": true,
+          "description": "tvshow/film/music = entertainments.id, episode = episodes.id, video = videos.id, livetv = live_tv_channel.id"
+        },
+        "user_id": {
+          "type": "integer",
+          "required": false,
+          "description": "Send when user is logged in. Server also reads auth token."
+        },
+        "device_id": {
+          "type": "string",
+          "required": false,
+          "description": "App install id. Recommended for guests."
+        },
+        "device_type": {
+          "type": "string",
+          "required": false,
+          "values": ["website", "android", "ios", "android_tv", "roku_tv", "amazon_fire_tv"],
+          "description": "Optional if header device-type is sent."
+        }
+      },
+      "request_body_examples": {
+        "livetv_roku": {
+          "content_type": "livetv",
+          "content_id": 15,
+          "device_type": "roku_tv"
+        },
+        "tvshow_from_network_roku": {
+          "content_type": "tvshow",
+          "content_id": 220,
+          "device_type": "roku_tv"
+        },
+        "episode_ios": {
+          "content_type": "episode",
+          "content_id": 4581,
+          "user_id": 10,
+          "device_id": "iphone-uuid-1",
+          "device_type": "ios"
+        },
+        "film_e360films_android": {
+          "content_type": "film",
+          "content_id": 330,
+          "user_id": 10,
+          "device_id": "pixel-uuid-1",
+          "device_type": "android",
+          "note": "Example: sami-blood on e360Films network"
+        },
+        "music_e360music_website": {
+          "content_type": "music",
+          "content_id": 160,
+          "device_type": "website",
+          "note": "Example: country-music on e360music network"
+        },
+        "video_android": {
+          "content_type": "video",
+          "content_id": 55,
+          "device_type": "android"
+        },
+        "tvshow_android_tv": {
+          "content_type": "tvshow",
+          "content_id": 220,
+          "device_type": "android_tv"
+        },
+        "guest_website_film": {
+          "content_type": "film",
+          "content_id": 330,
+          "device_type": "website"
+        }
+      },
+      "success_response": {
+        "http_status": 200,
+        "body": {
+          "status": true,
+          "message": "View saved",
+          "data": {
+            "content_type": "tvshow",
+            "content_id": 220,
+            "user_id": 10,
+            "device_type": "android",
+            "device_id": "pixel-uuid-1",
+            "counted": true,
+            "throttled": false,
+            "is_unique_user": true,
+            "view_count": {
+              "total_views": 15420,
+              "unique_users": 8310,
+              "by_device": {
+                "website": { "total_views": 4200, "unique_users": 2100 },
+                "android": { "total_views": 7100, "unique_users": 3900 },
+                "ios": { "total_views": 2800, "unique_users": 1600 },
+                "android_tv": { "total_views": 1320, "unique_users": 710 },
+                "roku_tv": { "total_views": 0, "unique_users": 0 },
+                "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+              }
+            }
+          }
+        }
+      },
+      "throttled_response": {
+        "http_status": 200,
+        "note": "Same user/guest already counted this content on this device within 30 minutes.",
+        "body": {
+          "status": true,
+          "message": "View already counted",
+          "data": {
+            "content_type": "tvshow",
+            "content_id": 220,
+            "counted": false,
+            "throttled": true,
+            "is_unique_user": false
+          }
+        }
+      },
+      "error_response_invalid_content": {
+        "http_status": 422,
+        "body": {
+          "status": false,
+          "message": "Invalid content_type or content_id"
+        }
+      },
+      "error_response_invalid_device": {
+        "http_status": 422,
+        "body": {
+          "status": false,
+          "message": "device-type must be one of: website, android, ios, android_tv, roku_tv, amazon_fire_tv"
+        }
+      }
+    },
+    {
+      "no": 2,
+      "name": "Content View Summary",
+      "method": "GET",
+      "path": "/api/v3/content-view-summary",
+      "full_url": "https://e360tv.com/api/v3/content-view-summary",
+      "auth": "None. Public.",
+      "when_to_call": "Use to display year totals by device and content_type, plus month-wise list for charts/tables.",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "query_params": {
+        "year": {
+          "required": false,
+          "type": "integer",
+          "description": "Filter by calendar year, e.g. 2026. Defaults to current year when omitted."
+        }
+      },
+      "request_examples": {
+        "current_year_default": "GET /api/v3/content-view-summary",
+        "specific_year": "GET /api/v3/content-view-summary?year=2025"
+      },
+      "success_response": {
+        "http_status": 200,
+        "body": {
+          "status": true,
+          "data": {
+            "year": 2026,
+            "total_views": 25000,
+            "unique_users": 9100,
+            "by_device": {
+              "website": { "total_views": 8000, "unique_users": 3000 },
+              "android": { "total_views": 9000, "unique_users": 3500 },
+              "ios": { "total_views": 5000, "unique_users": 1800 },
+              "android_tv": { "total_views": 3000, "unique_users": 800 },
+              "roku_tv": { "total_views": 0, "unique_users": 0 },
+              "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+            },
+            "by_content_type": {
+              "livetv": {
+                "total_views": 2000,
+                "unique_users": 900,
+                "by_device": {
+                  "website": { "total_views": 500, "unique_users": 200 },
+                  "android": { "total_views": 700, "unique_users": 300 },
+                  "ios": { "total_views": 400, "unique_users": 200 },
+                  "android_tv": { "total_views": 400, "unique_users": 200 },
+                  "roku_tv": { "total_views": 0, "unique_users": 0 },
+                  "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+                }
+              },
+              "tvshow": {
+                "total_views": 6000,
+                "unique_users": 2500,
+                "by_device": {
+                  "website": { "total_views": 2000, "unique_users": 800 },
+                  "android": { "total_views": 2200, "unique_users": 900 },
+                  "ios": { "total_views": 1200, "unique_users": 500 },
+                  "android_tv": { "total_views": 600, "unique_users": 300 },
+                  "roku_tv": { "total_views": 0, "unique_users": 0 },
+                  "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+                }
+              },
+              "episode": {
+                "total_views": 8000,
+                "unique_users": 3000,
+                "by_device": {
+                  "website": { "total_views": 2500, "unique_users": 900 },
+                  "android": { "total_views": 3000, "unique_users": 1100 },
+                  "ios": { "total_views": 1700, "unique_users": 700 },
+                  "android_tv": { "total_views": 800, "unique_users": 300 },
+                  "roku_tv": { "total_views": 0, "unique_users": 0 },
+                  "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+                }
+              },
+              "film": {
+                "total_views": 4000,
+                "unique_users": 2000,
+                "by_device": {
+                  "website": { "total_views": 1200, "unique_users": 600 },
+                  "android": { "total_views": 1500, "unique_users": 700 },
+                  "ios": { "total_views": 800, "unique_users": 400 },
+                  "android_tv": { "total_views": 500, "unique_users": 300 },
+                  "roku_tv": { "total_views": 0, "unique_users": 0 },
+                  "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+                }
+              },
+              "music": {
+                "total_views": 1500,
+                "unique_users": 700,
+                "by_device": {
+                  "website": { "total_views": 400, "unique_users": 200 },
+                  "android": { "total_views": 600, "unique_users": 250 },
+                  "ios": { "total_views": 300, "unique_users": 150 },
+                  "android_tv": { "total_views": 200, "unique_users": 100 },
+                  "roku_tv": { "total_views": 0, "unique_users": 0 },
+                  "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+                }
+              },
+              "video": {
+                "total_views": 3500,
+                "unique_users": 1200,
+                "by_device": {
+                  "website": { "total_views": 900, "unique_users": 300 },
+                  "android": { "total_views": 1400, "unique_users": 500 },
+                  "ios": { "total_views": 800, "unique_users": 300 },
+                  "android_tv": { "total_views": 400, "unique_users": 100 },
+                  "roku_tv": { "total_views": 0, "unique_users": 0 },
+                  "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+                }
+              }
+            },
+            "by_month": [
+              {
+                "month": 1,
+                "month_name": "January",
+                "period": "2026-01",
+                "total_views": 1800,
+                "unique_users": 620,
+                "by_device": {
+                  "website": { "total_views": 600, "unique_users": 210 },
+                  "android": { "total_views": 700, "unique_users": 240 },
+                  "ios": { "total_views": 300, "unique_users": 110 },
+                  "android_tv": { "total_views": 200, "unique_users": 60 },
+                  "roku_tv": { "total_views": 0, "unique_users": 0 },
+                  "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+                },
+                "by_content_type": {
+                  "livetv": { "total_views": 200, "unique_users": 50, "by_device": { "website": { "total_views": 90, "unique_users": 30 }, "android": { "total_views": 110, "unique_users": 20 }, "ios": { "total_views": 0, "unique_users": 0 }, "android_tv": { "total_views": 0, "unique_users": 0 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "tvshow": { "total_views": 500, "unique_users": 180, "by_device": { "website": { "total_views": 160, "unique_users": 60 }, "android": { "total_views": 180, "unique_users": 70 }, "ios": { "total_views": 100, "unique_users": 30 }, "android_tv": { "total_views": 60, "unique_users": 20 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "episode": { "total_views": 600, "unique_users": 200, "by_device": { "website": { "total_views": 200, "unique_users": 70 }, "android": { "total_views": 220, "unique_users": 80 }, "ios": { "total_views": 100, "unique_users": 30 }, "android_tv": { "total_views": 80, "unique_users": 20 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "film": { "total_views": 300, "unique_users": 120, "by_device": { "website": { "total_views": 90, "unique_users": 30 }, "android": { "total_views": 120, "unique_users": 50 }, "ios": { "total_views": 60, "unique_users": 30 }, "android_tv": { "total_views": 30, "unique_users": 10 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "music": { "total_views": 100, "unique_users": 40, "by_device": { "website": { "total_views": 30, "unique_users": 10 }, "android": { "total_views": 40, "unique_users": 15 }, "ios": { "total_views": 20, "unique_users": 10 }, "android_tv": { "total_views": 10, "unique_users": 5 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "video": { "total_views": 100, "unique_users": 30, "by_device": { "website": { "total_views": 30, "unique_users": 10 }, "android": { "total_views": 30, "unique_users": 10 }, "ios": { "total_views": 20, "unique_users": 5 }, "android_tv": { "total_views": 20, "unique_users": 5 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } }
+                }
+              },
+              {
+                "month": 2,
+                "month_name": "February",
+                "period": "2026-02",
+                "total_views": 0,
+                "unique_users": 0,
+                "by_device": {
+                  "website": { "total_views": 0, "unique_users": 0 },
+                  "android": { "total_views": 0, "unique_users": 0 },
+                  "ios": { "total_views": 0, "unique_users": 0 },
+                  "android_tv": { "total_views": 0, "unique_users": 0 },
+                  "roku_tv": { "total_views": 0, "unique_users": 0 },
+                  "amazon_fire_tv": { "total_views": 0, "unique_users": 0 }
+                },
+                "by_content_type": {
+                  "livetv": { "total_views": 0, "unique_users": 0, "by_device": { "website": { "total_views": 0, "unique_users": 0 }, "android": { "total_views": 0, "unique_users": 0 }, "ios": { "total_views": 0, "unique_users": 0 }, "android_tv": { "total_views": 0, "unique_users": 0 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "tvshow": { "total_views": 0, "unique_users": 0, "by_device": { "website": { "total_views": 0, "unique_users": 0 }, "android": { "total_views": 0, "unique_users": 0 }, "ios": { "total_views": 0, "unique_users": 0 }, "android_tv": { "total_views": 0, "unique_users": 0 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "episode": { "total_views": 0, "unique_users": 0, "by_device": { "website": { "total_views": 0, "unique_users": 0 }, "android": { "total_views": 0, "unique_users": 0 }, "ios": { "total_views": 0, "unique_users": 0 }, "android_tv": { "total_views": 0, "unique_users": 0 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "film": { "total_views": 0, "unique_users": 0, "by_device": { "website": { "total_views": 0, "unique_users": 0 }, "android": { "total_views": 0, "unique_users": 0 }, "ios": { "total_views": 0, "unique_users": 0 }, "android_tv": { "total_views": 0, "unique_users": 0 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "music": { "total_views": 0, "unique_users": 0, "by_device": { "website": { "total_views": 0, "unique_users": 0 }, "android": { "total_views": 0, "unique_users": 0 }, "ios": { "total_views": 0, "unique_users": 0 }, "android_tv": { "total_views": 0, "unique_users": 0 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } },
+                  "video": { "total_views": 0, "unique_users": 0, "by_device": { "website": { "total_views": 0, "unique_users": 0 }, "android": { "total_views": 0, "unique_users": 0 }, "ios": { "total_views": 0, "unique_users": 0 }, "android_tv": { "total_views": 0, "unique_users": 0 }, "roku_tv": { "total_views": 0, "unique_users": 0 }, "amazon_fire_tv": { "total_views": 0, "unique_users": 0 } } }
+                }
+              }
+            ],
+            "note": "by_content_type always uses order livetv, tvshow, episode, film, music, video. by_month always returns 12 items (January through December). Months with no views still appear with 0 counts. Legacy content_type movie is rolled into film in summaries."
+          }
+        }
+      }
+    },
+    {
+      "no": 3,
+      "name": "Save Entertainment Views (old / backward compatible)",
+      "method": "POST",
+      "path": "/api/save-entertainment-views",
+      "full_url": "https://e360tv.com/api/save-entertainment-views",
+      "auth": "Required. Sanctum Bearer token.",
+      "note": "Keep for old Android/iOS builds. New apps should use API 1. Entertainment shows are stored as film/music/tvshow based on network.",
+      "request_body_fields": {
+        "entertainment_id": { "type": "integer", "required": true },
+        "entertainment_type": {
+          "type": "string",
+          "required": false,
+          "values": ["livetv", "tvshow", "episode", "film", "music", "video", "movie"]
+        }
+      },
+      "success_response": {
+        "http_status": 200,
+        "body": { "status": true, "message": "View added" }
+      }
+    }
+  ]
+}
